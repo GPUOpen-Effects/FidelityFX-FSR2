@@ -1,0 +1,65 @@
+variables:
+  SampleName: FSR2_Sample
+  CMakeConfig: -G "Visual Studio 16 2019" -A x64
+  GIT_SUBMODULE_STRATEGY: normal
+  FF_USE_FASTZIP: "true"
+  ARTIFACT_COMPRESSION_LEVEL: "fast"
+
+stages:
+  - build
+  - deploy
+
+build_dx12:
+  tags:
+  - windows
+  - amd64
+  stage: build
+  artifacts:
+    paths:
+    - bin/
+  script:
+  - 'cmake -A x64 -S . -B build/DX12 -DGFX_API=DX12'
+  - 'cmake --build build/DX12 --config Release --parallel 4 -- /p:CL_MPcount=16'
+
+build_vk:
+  tags:
+  - windows
+  - amd64
+  stage: build
+  artifacts:
+    paths:
+    - bin/
+  script:
+  - 'cmake -A x64 -S . -B build/VK -DGFX_API=VK'
+  - 'cmake --build build/VK --config Release --parallel 4 -- /p:CL_MPcount=16'
+
+package_sample:
+  tags:
+  - windows
+  - amd64
+  stage: deploy
+  dependencies:
+    - build_dx12
+    - build_vk
+  script:
+    - echo "Packaging build"
+    - echo cd .\bin\ > %SampleName%_DX12.bat
+    - echo start %SampleName%_DX12.exe >> %SampleName%_DX12.bat
+    - copy %VULKAN_SDK%\Bin\glslc.exe bin
+    - echo cd .\bin\ > %SampleName%_VK.bat
+    - echo start %SampleName%_VK.exe >> %SampleName%_VK.bat
+  artifacts:
+      name: "%SampleName%-%CI_COMMIT_TAG%-%CI_COMMIT_REF_NAME%-%CI_COMMIT_SHORT_SHA%"
+      paths:
+      - "bin/"
+      - "media/cauldron-media/AbandonedWarehouse/"
+      - "media/cauldron-media/Sponza-New/"
+      - "media/cauldron-media/envmaps/"
+      - "media/cauldron-media/noise/"
+      - "media/cauldron-media/color_ramp_bt2020_dcip3/"
+      - "media/cauldron-media/readme.md"
+      - "media/cauldron-media/screenshot.png"
+      - "README.md"
+      - "LICENSE.txt"
+      - "%SampleName%_DX12.bat"
+      - "%SampleName%_VK.bat"

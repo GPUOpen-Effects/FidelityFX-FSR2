@@ -1,0 +1,74 @@
+{
+  "globals": {
+    "CpuValidationLayerEnabled": false,
+    "GpuValidationLayerEnabled": false,
+    "presentationMode": 0,
+    "width": 1920,
+    "height": 1080,
+    "activeScene": 1,
+    "benchmark": false,
+    "vsync": false,
+    "stablePowerState": false,
+    "fontsize": 13,
+    "FreesyncHDROptionEnabled":  true
+  },
+  "scenes": [
+    {
+      "name": "AbandonedWarehouse",
+      "directory": "..\\media\\cauldron-media\\AbandonedWarehouse\\",
+      "filename": "AbandonedWarehouse.gltf",
+      "TAA": true,
+      "toneMapper": 0,
+      "iblFactor": 0.6,
+      "emmisiveFactor": 1,
+      "intensity": 10,
+      "exposure": 1.4,
+      "camera": {
+        "defaultFrom": [ 0.45, -1.4, -6.0 ],
+        "defaultTo": [ -6.5, -1.4, -7 ]
+      }
+    },
+    {
+      "name": "Sponza",
+      "directory": "..\\media\\cauldron-media\\Sponza-New\\",
+      "filename": "scene.gltf",
+      "TAA": true,
+      "toneMapper": 0,
+      "iblFactor": 0.2,
+      "emmisiveFactor": 1,
+      "intensity": 7.5,
+      "exposure": 1.5,
+      "activeCamera": 1,
+      "camera": {
+        "defaultFrom": [ 3.0, 1.5, -0.2 ],
+        "defaultTo": [ 0.0, 1.5, -0.2 ]
+      },
+      "BenchmarkSettings": {
+        "timeStep": 1,
+        "timeStart": 0,
+        "timeEnd": 10000,
+        "exitWhenTimeEnds": true,
+        "resultsFilename": "Sponza.csv",
+        "warmUpFrames": 200,
+        "sequence": {
+          "timeStart": 0,
+          "timeEnd": 2000,
+          "keyFrames": [
+            {
+              "time": 0,
+              "from": [ 5.13694048, 1.89175785, -1.40289795 ],
+              "to": [ 0.703276634, 1.02280307, 0.218072295 ],
+              "screenShotName": "camera1.jpg"
+            },
+            {
+              "time": 1000,
+              "from": [ -5.13694048, 1.89175785, -1.40289795 ],
+              "to": [ 0.703276634, 1.02280307, 0.218072295 ],
+              "screenShotName": "camera2.jpg"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

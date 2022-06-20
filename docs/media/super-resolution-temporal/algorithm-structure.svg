@@ -1,0 +1,1073 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="501.91428mm"
+   height="266.76199mm"
+   viewBox="0 0 501.91428 266.76199"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   sodipodi:docname="algorithm-structure.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.77771465"
+     inkscape:cx="1989.1615"
+     inkscape:cy="1198.383"
+     inkscape:window-width="3699"
+     inkscape:window-height="2126"
+     inkscape:window-x="130"
+     inkscape:window-y="-11"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2">
+    <clipPath
+       id="clip0">
+      <rect
+         x="15"
+         y="15"
+         width="1897"
+         height="1024"
+         id="rect9" />
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(421.06024,168.76245)">
+    <g
+       clip-path="url(#clip0)"
+       transform="matrix(0.26458333,0,0,0.26458333,-425.02928,-176.63794)"
+       id="g386">
+      <rect
+         x="1031"
+         y="447"
+         width="25"
+         height="22"
+         id="rect14" />
+      <rect
+         x="447"
+         y="194"
+         width="25"
+         height="22"
+         id="rect16" />
+      <rect
+         x="447"
+         y="162"
+         width="25"
+         height="22"
+         id="rect18" />
+      <rect
+         x="447"
+         y="228"
+         width="25"
+         height="22"
+         id="rect20" />
+      <rect
+         x="293"
+         y="162"
+         width="25"
+         height="22"
+         id="rect22" />
+      <rect
+         x="1388"
+         y="57"
+         width="99"
+         height="53"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect24" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="20px"
+         transform="translate(1419.7,91)"
+         id="text26">Pass</text>
+      <rect
+         x="1500"
+         y="57"
+         width="99"
+         height="53"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect28" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="16px"
+         transform="translate(1528.79,89)"
+         id="text30">Buffer</text>
+      <rect
+         x="795"
+         y="195"
+         width="25"
+         height="22"
+         id="rect32" />
+      <rect
+         x="795"
+         y="163"
+         width="25"
+         height="22"
+         id="rect34" />
+      <rect
+         x="795"
+         y="229"
+         width="25"
+         height="22"
+         id="rect36" />
+      <rect
+         x="795"
+         y="161"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect38" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(847.157,191)"
+         id="text42">Depth clip<tspan
+   font-size="14px"
+   x="-14"
+   y="44"
+   id="tspan40">Render resolution</tspan></text>
+      <rect
+         x="302"
+         y="163"
+         width="20"
+         height="29"
+         id="rect44" />
+      <rect
+         x="294"
+         y="162"
+         width="178"
+         height="88"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect46" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(308.539,191)"
+         id="text50">Reconstruct &amp; dilate<tspan
+   font-size="14px"
+   x="23.370001"
+   y="44"
+   id="tspan48">Render resolution</tspan></text>
+      <rect
+         x="1514"
+         y="380"
+         width="178"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#404040"
+         id="rect52" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1583.92,405)"
+         id="text58">RCAS<tspan
+   font-size="14px"
+   x="-48.369999"
+   y="51"
+   id="tspan54">Presentation</tspan><tspan
+   font-size="14px"
+   x="28.129999"
+   y="51"
+   id="tspan56">resolution</tspan></text>
+      <rect
+         x="534"
+         y="938"
+         width="178"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect60" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(575.853,964)"
+         id="text64">Update locks<tspan
+   font-size="14px"
+   x="-4"
+   y="51"
+   id="tspan62">Render resolution</tspan></text>
+      <rect
+         x="293"
+         y="938"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect66" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(316.134,964)"
+         id="text70">Adjust Input Color<tspan
+   font-size="14px"
+   x="15.12"
+   y="51"
+   id="tspan68">Render resolution</tspan></text>
+      <rect
+         x="293"
+         y="707"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect72" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(328.241,722)"
+         id="text78">Auto-exposure <tspan
+   font-size="18px"
+   x="34.5"
+   y="21"
+   id="tspan74">(SPD)</tspan><tspan
+   font-size="14px"
+   x="3"
+   y="73"
+   id="tspan76">Render resolution</tspan></text>
+      <rect
+         x="64"
+         y="485"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect80" />
+      <rect
+         x="54"
+         y="161"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="16, 6"
+         fill="#ffffff"
+         id="rect82" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(87.1588,184)"
+         id="text94">Motion<tspan
+   font-size="18px"
+   x="58.25"
+   y="0"
+   id="tspan84">vectors</tspan><tspan
+   font-size="12px"
+   x="-2.6199999"
+   y="16"
+   id="tspan86">APPLICATION SPECIFIED</tspan><tspan
+   font-size="12px"
+   x="29.5"
+   y="30"
+   id="tspan88">(2x FLOAT)</tspan><tspan
+   font-size="12px"
+   x="21.129999"
+   y="45"
+   id="tspan90">Current frame</tspan><tspan
+   font-size="12px"
+   x="12.13"
+   y="59"
+   id="tspan92">Render resolution</tspan></text>
+      <rect
+         x="54"
+         y="59"
+         width="179"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="16, 6"
+         fill="#ffffff"
+         id="rect96" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(95.9088,83)"
+         id="text108">Depth buffer<tspan
+   font-size="12px"
+   x="-11.37"
+   y="16"
+   id="tspan98">APPLICATION SPECIFIED</tspan><tspan
+   font-size="12px"
+   x="20.75"
+   y="30"
+   id="tspan100">(1x FLOAT)</tspan><tspan
+   font-size="12px"
+   x="12.38"
+   y="45"
+   id="tspan102">Current frame</tspan><tspan
+   font-size="12px"
+   x="3.3800001"
+   y="59"
+   id="tspan104">Render</tspan><tspan
+   font-size="12px"
+   x="41.380001"
+   y="59"
+   id="tspan106">resolution</tspan></text>
+      <rect
+         x="54"
+         y="477"
+         width="179"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect110" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(87.6638,499)"
+         id="text120">Output<tspan
+   font-size="18px"
+   x="56.5"
+   y="0"
+   id="tspan112">buffer</tspan>*<tspan
+   font-size="12px"
+   x="-1"
+   y="16"
+   id="tspan114">R16G16B16A16_FLOAT</tspan><tspan
+   font-size="12px"
+   x="18.379999"
+   y="45"
+   id="tspan116">Previous frame</tspan><tspan
+   font-size="12px"
+   x="-2"
+   y="59"
+   id="tspan118">Presentation resolution</tspan></text>
+      <rect
+         x="63"
+         y="823"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="16, 6"
+         fill="#ffffff"
+         id="rect122" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(108.676,845)"
+         id="text130">Color buffer<tspan
+   font-size="12px"
+   x="-14.37"
+   y="16"
+   id="tspan124">APPLICATION SPECIFIED</tspan><tspan
+   font-size="12px"
+   x="9.3800001"
+   y="45"
+   id="tspan126">Current frame</tspan><tspan
+   font-size="12px"
+   x="0.37999699"
+   y="59"
+   id="tspan128">Render resolution</tspan></text>
+      <rect
+         x="54"
+         y="592"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="16, 6"
+         fill="#ffffff"
+         id="rect132" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(109.409,614)"
+         id="text140">Exposure<tspan
+   font-size="12px"
+   x="5.75"
+   y="16"
+   id="tspan134">R32_FLOAT</tspan><tspan
+   font-size="12px"
+   x="-1.12"
+   y="45"
+   id="tspan136">Current frame</tspan><tspan
+   font-size="12px"
+   x="25"
+   y="59"
+   id="tspan138">1x1</tspan></text>
+      <rect
+         x="54"
+         y="265"
+         width="179"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="16, 6"
+         fill="#ffffff"
+         id="rect142" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(90.7887,289)"
+         id="text152">Reactive mask<tspan
+   font-size="12px"
+   x="22.870001"
+   y="16"
+   id="tspan144">R8_UNORM</tspan><tspan
+   font-size="12px"
+   x="17.5"
+   y="45"
+   id="tspan146">Current frame</tspan><tspan
+   font-size="12px"
+   x="8.5"
+   y="59"
+   id="tspan148">Render</tspan><tspan
+   font-size="12px"
+   x="46.5"
+   y="59"
+   id="tspan150">resolution</tspan></text>
+      <rect
+         x="534"
+         y="592"
+         width="178"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect154" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(553.228,614)"
+         id="text162">Current Luminance<tspan
+   font-size="12px"
+   x="42"
+   y="16"
+   id="tspan156">R16_FLOAT</tspan><tspan
+   font-size="12px"
+   x="35.119999"
+   y="45"
+   id="tspan158">Current frame</tspan><tspan
+   font-size="12px"
+   x="18"
+   y="59"
+   id="tspan160">Render resolution / 2</tspan></text>
+      <rect
+         x="534"
+         y="823"
+         width="178"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect164" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(578.978,845)"
+         id="text172">Color buffer<tspan
+   font-size="12px"
+   x="-12.25"
+   y="16"
+   id="tspan166">R16G16B16A16_FLOAT</tspan><tspan
+   font-size="12px"
+   x="9.3699999"
+   y="45"
+   id="tspan168">Current frame</tspan><tspan
+   font-size="12px"
+   x="0.369995"
+   y="59"
+   id="tspan170">Render resolution</tspan></text>
+      <rect
+         x="534"
+         y="708"
+         width="178"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect174" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(574.848,730)"
+         id="text182">Luma History<tspan
+   font-size="12px"
+   x="-0.619995"
+   y="16"
+   id="tspan176">R8G8B8A8_UNORM</tspan><tspan
+   font-size="12px"
+   x="13.5"
+   y="45"
+   id="tspan178">Current frame</tspan><tspan
+   font-size="12px"
+   x="4.5"
+   y="59"
+   id="tspan180">Render resolution</tspan></text>
+      <path
+         d="m 0,-3 h 33.9624 v 233.632 l -3,-3 h 15.9623 v 6 H 27.9624 V 0 l 3,3 H 0 Z m 43.9247,224.632 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,472,983.632)"
+         id="path184" />
+      <path
+         d="m 0,-3 h 33.9624 v 118.366 l -3,-3 h 15.9623 v 6 H 27.9624 V 0 l 3,3 H 0 Z m 43.9247,109.366 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,472,983.366)"
+         id="path186" />
+      <path
+         d="m 626,913 v 10.884 h -6 V 913 Z m 6,7.884 -9,18 -9,-18 z"
+         id="path188" />
+      <rect
+         x="802"
+         y="947"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect190" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(846.722,969)"
+         id="text198">Lock status†<tspan
+   font-size="12px"
+   x="4.5"
+   y="16"
+   id="tspan192">R16G16_SFLOAT</tspan><tspan
+   font-size="12px"
+   x="7.8699999"
+   y="45"
+   id="tspan194">Previous frame</tspan><tspan
+   font-size="12px"
+   x="-12.5"
+   y="59"
+   id="tspan196">Presentation resolution</tspan></text>
+      <path
+         d="m 15,-2.99997 52.5274,10e-5 v 6 L 15,3.00003 Z m 3,12 L 0,0 18,-8.99997 Z m 46.5274,-17.99991 18,9.00003748 -18,8.99996252 z"
+         transform="matrix(-1,0,0,1,794.527,983)"
+         id="path200" />
+      <rect
+         x="795"
+         y="938"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect202" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(839.424,961)"
+         id="text210">Lock status†<tspan
+   font-size="12px"
+   x="7.25"
+   y="16"
+   id="tspan204">R16G16_FLOAT</tspan><tspan
+   font-size="12px"
+   x="7.8699999"
+   y="45"
+   id="tspan206">Previous frame</tspan><tspan
+   font-size="12px"
+   x="-12.5"
+   y="59"
+   id="tspan208">Presentation resolution</tspan></text>
+      <path
+         d="m 0,-3 h 386.634 v 271.41 h -6 V 0 l 3,3 H 0 Z m 392.634,268.41 -9,18 -9,-18 z"
+         transform="matrix(1,0,0,-1,712,752.41)"
+         id="path212" />
+      <path
+         d="m 0,-3 h 62.7439 v 876.299 h -6 V 0 l 3,3 H 0 Z m 68.7439,873.299 -9,18 -9,-18 z"
+         transform="matrix(0,1,1,0,143,354)"
+         id="path214" />
+      <rect
+         x="540"
+         y="58"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect216" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(574.163,81)"
+         id="text224">Previous depth<tspan
+   font-size="12px"
+   x="22.870001"
+   y="16"
+   id="tspan218">R32_UNORM</tspan><tspan
+   font-size="12px"
+   x="20.5"
+   y="45"
+   id="tspan220">Current frame</tspan><tspan
+   font-size="12px"
+   x="11.5"
+   y="59"
+   id="tspan222">Render resolution</tspan></text>
+      <rect
+         x="540"
+         y="264"
+         width="179"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect226" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="16px"
+         transform="translate(554.993,285)"
+         id="text234">Dilated motion vectors<tspan
+   font-size="12px"
+   x="40.130001"
+   y="15"
+   id="tspan228">R16G16_UINT</tspan><tspan
+   font-size="12px"
+   x="39.5"
+   y="44"
+   id="tspan230">Current frame</tspan><tspan
+   font-size="12px"
+   x="30.5"
+   y="59"
+   id="tspan232">Render resolution</tspan></text>
+      <rect
+         x="540"
+         y="160"
+         width="179"
+         height="91"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect236" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(579.584,183)"
+         id="text244">Dilated depth<tspan
+   font-size="12px"
+   x="25.629999"
+   y="16"
+   id="tspan238">R16_UINT</tspan><tspan
+   font-size="12px"
+   x="15.25"
+   y="45"
+   id="tspan240">Current frame</tspan><tspan
+   font-size="12px"
+   x="6.25"
+   y="59"
+   id="tspan242">Render resolution</tspan></text>
+      <path
+         d="m 233,101 h 33.386 v 72.577 l -3,-3 h 15.386 v 6 H 260.386 V 104 l 3,3 H 233 Z m 42.772,63.577 18,9 -18,9 z"
+         id="path246" />
+      <path
+         d="m 0,-3 h 37.0324 v 72.9002 l -3,-3 h 19.0323 v 6 H 31.0324 V 0 l 3,3 H 0 Z m 50.0647,63.9002 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,472,172.9)"
+         id="path248" />
+      <path
+         d="m 472,236 h 37.032 v 72.398 l -3,-3 h 19.033 v 6 H 503.032 V 239 l 3,3 H 472 Z m 50.065,63.398 18,9 -18,9 z"
+         id="path250" />
+      <path
+         d="m 719,100 h 41.023 v 73.888 l -3,-3 h 23.023 v 6 H 754.023 V 103 l 3,3 H 719 Z m 58.046,64.888 18,9 -18,9 z"
+         id="path252" />
+      <path
+         d="m 0,-3 h 41.1936 v 71.4109 l -3,-3 h 23.1936 v 6 H 35.1936 V 0 l 3,3 H 0 Z m 58.3872,62.4109 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,719,308.411)"
+         id="path254" />
+      <path
+         d="m 0,-3 h 41.585 v 390.095 h -6 V 0 l 3,3 H 0 Z m 47.585,387.096 -9,18 -9,-18 z"
+         transform="matrix(0,1,1,0,629,353)"
+         id="path256" />
+      <rect
+         x="1032"
+         y="161"
+         width="178"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect258" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1054.61,184)"
+         id="text268">Disocclusion mask<tspan
+   font-size="12px"
+   x="37.130001"
+   y="16"
+   id="tspan260">R8_</tspan><tspan
+   font-size="12px"
+   x="55.630001"
+   y="16"
+   id="tspan262">UNORM</tspan><tspan
+   font-size="12px"
+   x="31.75"
+   y="45"
+   id="tspan264">Current frame</tspan><tspan
+   font-size="12px"
+   x="22.75"
+   y="59"
+   id="tspan266">Render resolution</tspan></text>
+      <path
+         d="m 0,-3 h 67.3707 v 3.106299 l -3,-2.999999 h 49.3703 v 6 H 61.3707 V 0 l 3,3 H 0 Z m 110.741,-5.8937 18,8.999999 -18,9.000001 z"
+         transform="matrix(0,1,1,0,1121,251)"
+         id="path270" />
+      <rect
+         x="1283"
+         y="484"
+         width="178"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect272" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1302.46,505)"
+         id="text280">Reprojected locks†<tspan
+   font-size="12px"
+   x="29"
+   y="16"
+   id="tspan274">R16G16_SFLOAT</tspan><tspan
+   font-size="12px"
+   x="34.619999"
+   y="47"
+   id="tspan276">Current frame</tspan><tspan
+   font-size="12px"
+   x="12"
+   y="61"
+   id="tspan278">Presentation resolution</tspan></text>
+      <rect
+         x="1283"
+         y="275"
+         width="178"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect282" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1316.7,297)"
+         id="text290">Output buffer*<tspan
+   font-size="12px"
+   x="-3.75"
+   y="16"
+   id="tspan284">R16G16B16A16_SFLOAT</tspan><tspan
+   font-size="12px"
+   x="20.620001"
+   y="45"
+   id="tspan286">Current frame</tspan><tspan
+   font-size="12px"
+   x="-2"
+   y="59"
+   id="tspan288">Presentation resolution</tspan></text>
+      <rect
+         x="1275"
+         y="266"
+         width="178"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect292" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1308.82,288)"
+         id="text300">Output buffer*<tspan
+   font-size="12px"
+   x="-1"
+   y="16"
+   id="tspan294">R16G16B16A16_FLOAT</tspan><tspan
+   font-size="12px"
+   x="20.620001"
+   y="45"
+   id="tspan296">Current frame</tspan><tspan
+   font-size="12px"
+   x="-2"
+   y="59"
+   id="tspan298">Presentation resolution</tspan></text>
+      <rect
+         x="1275"
+         y="477"
+         width="179"
+         height="90"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect302" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1295.42,498)"
+         id="text310">Reprojected locks†<tspan
+   font-size="12px"
+   x="31.75"
+   y="16"
+   id="tspan304">R16G16_FLOAT</tspan><tspan
+   font-size="12px"
+   x="34.620098"
+   y="47"
+   id="tspan306">Current frame</tspan><tspan
+   font-size="12px"
+   x="12"
+   y="61"
+   id="tspan308">Presentation resolution</tspan></text>
+      <path
+         d="m 0,-3 h 227.477 v 502.042 h -6 V 0 l 3,3 H 0 Z m 233.477,499.042 -9,18 -9,-18 z"
+         transform="matrix(1,0,0,-1,974,983.042)"
+         id="path312" />
+      <path
+         d="m 0,-3 h 334.232 v 155.639 h -6 V 0 l 3,3 H 0 Z m 340.232,152.639 -9,18 -9,-18 z"
+         transform="matrix(1,0,0,-1,712,636.639)"
+         id="path314" />
+      <path
+         d="m 0,-3 h 437.653 v 386.676 h -6 V 0 l 3,3 H 0 Z m 443.653,383.676 -9,18 -9,-18 z"
+         transform="matrix(1,0,0,-1,712,867.676)"
+         id="path316" />
+      <path
+         d="m 1211,421 h 35.46 v 100.748 l -3,-3 h 17.45 v 6 h -20.45 V 424 l 3,3 H 1211 Z m 46.91,91.748 18,9 -18,9 z"
+         id="path318" />
+      <path
+         d="m 0,-3 h 35.288 v 116.523 l -3,-3 h 17.2879 v 6 H 29.288 V 0 l 3,3 H 0 Z m 46.5759,107.523 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,1211,424.523)"
+         id="path320" />
+      <path
+         d="m 1453,308 h 33.16 v 116.523 l -3,-3 h 15.17 v 6 h -18.17 V 311 l 3,3 H 1453 Z m 42.33,107.523 18,9 -18,9 z"
+         id="path322" />
+      <path
+         d="M 140,476.66 V 433 h 876.3 v 6 H 143 l 3,-3 v 40.66 z m 873.3,-49.66 18,9 -18,9 z"
+         id="path324" />
+      <rect
+         x="1084"
+         y="447"
+         width="24"
+         height="22"
+         id="rect326" />
+      <rect
+         x="1135"
+         y="447"
+         width="24"
+         height="22"
+         id="rect328" />
+      <rect
+         x="1186"
+         y="447"
+         width="24"
+         height="22"
+         id="rect330" />
+      <rect
+         x="1032"
+         y="380"
+         width="179"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         id="rect332" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1085.84,398)"
+         id="text338">Reproject <tspan
+   font-size="18px"
+   x="-16.129999"
+   y="21"
+   id="tspan334">&amp; Accumulate</tspan><tspan
+   font-size="14px"
+   x="-32"
+   y="66"
+   id="tspan336">Presentation resolution</tspan></text>
+      <rect
+         x="1031"
+         y="403"
+         width="25"
+         height="22"
+         id="rect340" />
+      <rect
+         x="1031"
+         y="381"
+         width="25"
+         height="22"
+         id="rect342" />
+      <path
+         d="m 974,203 h 43.03 v 6 H 974 Z m 40.03,-6 18,9 -18,9 z"
+         id="path344" />
+      <path
+         d="m 719.02,203 61.046,0.404 -0.039,6 L 718.98,209 Z m 58.086,-5.616 17.94,9.119 -18.059,8.881 z"
+         id="path346" />
+      <path
+         d="m 472.021,202 53.406,0.378 -0.042,6 L 471.979,208 Z m 50.449,-5.643 17.936,9.127 -18.063,8.872 z"
+         id="path348" />
+      <path
+         d="M 0.0117017,-2.99998 46.2984,-2.81943 46.275,3.18052 -0.0117017,2.99998 Z M 43.3219,-8.83109 61.2866,0.239055 43.2516,9.16878 Z"
+         transform="matrix(1,0,0,-1,233,206.239)"
+         id="path350" />
+      <rect
+         x="1733"
+         y="381"
+         width="178"
+         height="89"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="8, 6"
+         fill="#ffffff"
+         id="rect352" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="18px"
+         transform="translate(1750.65,403)"
+         id="text360">Presentation buffer<tspan
+   font-size="12px"
+   x="13"
+   y="16"
+   id="tspan354">APPLICATION SPECIFIED</tspan><tspan
+   font-size="12px"
+   x="36.75"
+   y="45"
+   id="tspan356">Current frame</tspan><tspan
+   font-size="12px"
+   x="14.13"
+   y="59"
+   id="tspan358">Presentation resolution</tspan></text>
+      <path
+         d="m 1692.09,421.001 25.56,0.764 -0.18,5.997 -25.56,-0.763 z m 22.74,-5.323 17.73,9.533 -18.27,8.459 z"
+         id="path362" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="24px"
+         transform="translate(1387.64,45)"
+         id="text364">Key</text>
+      <rect
+         x="1612"
+         y="58"
+         width="99"
+         height="53"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         stroke-dasharray="8, 6"
+         fill="#ffffff"
+         id="rect366" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="12px"
+         transform="translate(1628.78,81)"
+         id="text370">Input/Output <tspan
+   font-size="12px"
+   x="17.370001"
+   y="15"
+   id="tspan368">Buffer</tspan></text>
+      <path
+         d="m 242,865 h 143.199 v 58.608 h -6 V 868 l 3,3 H 242 Z m 149.199,55.608 -9,18 -9,-18 z"
+         id="path372" />
+      <path
+         d="m 0,-3 h 143.181 v 58.9805 h -6 V 0 l 3,3 H 0 Z m 149.181,55.9805 -9,18 -9,-18 z"
+         transform="matrix(1,0,0,-1,242,867.98)"
+         id="path374" />
+      <path
+         d="M 379,707.542 V 634 h 139.277 v 6 H 382 l 3,-3 v 70.542 z M 515.277,628 l 18,9 -18,9 z"
+         id="path376" />
+      <path
+         d="M 54,640 H 18.0011 l 3,-3 v 346.436 l -3,-3 H 278.641 v 6 H 15.0011 V 634 H 54 Z m 221.641,334.436 18,9 -18,9 z"
+         id="path378" />
+      <path
+         d="m 0,-3 h 47.996 v 181.712 l -3,-3 h 738.798 v 6 H 41.996 V 0 l 3,3 H 0 Z m 780.795,172.712 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,233,636.712)"
+         id="path380" />
+      <rect
+         x="1031"
+         y="425"
+         width="25"
+         height="22"
+         id="rect382" />
+      <path
+         d="M 293.118,755.608 H 140 V 697 h 6 v 55.608 l -3,-3 H 293.118 Z M 134,700 l 9,-18 9,18 z"
+         id="path384" />
+    </g>
+  </g>
+</svg>

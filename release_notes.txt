@@ -1,0 +1,20 @@
+FidelityFX Super Resolution 2.0.1
+=================================
+
+Features
+--------
+- The first release of FidelityFX Super Resolution 2.0.
+
+Changes
+-------
+- First release.
+
+Limitations
+-----------
+- The precise configuration and contents of the reactivity mask is subject to change in a future version of FSR2.
+- Registered XBOX developers can refer to the GDK for an example of reactivity usage.
+
+Known issues
+------------
+- The Vulkan version of the FSR2 sample application experiences a crash on Intel i9-10900K products.
+- The Vulkan version of the FSR2 sample application experiences a crash when using the function keys to toggle between scaling modes on some NVIDIA hardware.

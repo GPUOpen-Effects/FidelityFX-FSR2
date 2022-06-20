@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="294.74582mm"
+   height="90.487495mm"
+   viewBox="0 0 294.74582 90.487495"
+   version="1.1"
+   id="svg2500"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs2497">
+    <clipPath
+       id="clip0">
+      <rect
+         x="44"
+         y="95"
+         width="1114"
+         height="344"
+         id="rect2504" />
+    </clipPath>
+  </defs>
+  <g
+     id="layer1"
+     transform="translate(214.39353,-61.921199)">
+    <g
+       clip-path="url(#clip0)"
+       transform="matrix(0.26458333,0,0,0.26458333,-226.0352,36.785783)"
+       id="g2585">
+      <path
+         d="m 422.002,263 439.846,0.248 -0.003,6 L 421.998,269 Z m 436.85,-5.753 17.995,9.01 -18.005,8.99 z"
+         id="path2509" />
+      <rect
+         x="422"
+         y="96"
+         width="358"
+         height="340"
+         id="rect2511" />
+      <text
+         fill="#ffffff"
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="24px"
+         transform="translate(554.201,125)"
+         id="text2517">FidelityFX <tspan
+   font-size="24px"
+   x="-53.669998"
+   y="29"
+   id="tspan2513">Super Resolution</tspan><tspan
+   font-size="24px"
+   x="117.16"
+   y="29"
+   id="tspan2515">2.0</tspan></text>
+      <path
+         d="m 726,261 h 39 v 92.666 h -24 v -6 h 21 l -3,3 V 264 l 3,3 h -36 z m 18,98.666 -18,-9 18,-9 z"
+         fill="#ffffff"
+         id="path2519" />
+      <rect
+         x="877"
+         y="215"
+         width="280"
+         height="102"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect2521" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="20px"
+         transform="translate(960.821,239)"
+         id="text2529">Output buffer<tspan
+   font-size="14px"
+   x="-11.6299"
+   y="18"
+   id="tspan2523">APPLICATION SPECIFIED</tspan><tspan
+   font-size="14px"
+   x="15.75"
+   y="52"
+   id="tspan2525">Current frame</tspan><tspan
+   font-size="14px"
+   x="-11"
+   y="69"
+   id="tspan2527">Presentation resolution</tspan></text>
+      <rect
+         x="45"
+         y="96"
+         width="280"
+         height="103"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect2531" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="20px"
+         transform="translate(132.951,122)"
+         id="text2541">Depth buffer<tspan
+   font-size="14px"
+   x="-48"
+   y="18"
+   id="tspan2533">APPLICATION SPECIFIED (1x FLOAT)</tspan><tspan
+   font-size="14px"
+   x="11.63"
+   y="52"
+   id="tspan2535">Current frame</tspan><tspan
+   font-size="14px"
+   x="1"
+   y="69"
+   id="tspan2537">Render</tspan><tspan
+   font-size="14px"
+   x="45.25"
+   y="69"
+   id="tspan2539">resolution</tspan></text>
+      <rect
+         x="45"
+         y="214"
+         width="280"
+         height="103"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect2543" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="20px"
+         transform="translate(125.451,239)"
+         id="text2551">Velocity buffer<tspan
+   font-size="14px"
+   x="-40.5"
+   y="18"
+   id="tspan2545">APPLICATION SPECIFIED (2x FLOAT)</tspan><tspan
+   font-size="14px"
+   x="19.129999"
+   y="52"
+   id="tspan2547">Current frame</tspan><tspan
+   font-size="14px"
+   x="8.5000095"
+   y="69"
+   id="tspan2549">Render resolution</tspan></text>
+      <path
+         d="m 325,145 h 51.277 v 121.258 l -3,-3 h 33.277 v 6 H 370.277 V 148 l 3,3 H 325 Z m 78.554,112.258 18,9 -18,9 z"
+         id="path2553" />
+      <rect
+         x="45"
+         y="332"
+         width="280"
+         height="104"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect2555" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="20px"
+         transform="translate(136.331,357)"
+         id="text2563">Color buffer<tspan
+   font-size="14px"
+   x="-19.129999"
+   y="18"
+   id="tspan2557">APPLICATION SPECIFIED</tspan><tspan
+   font-size="14px"
+   x="8.25"
+   y="52"
+   id="tspan2559">Current frame</tspan><tspan
+   font-size="14px"
+   x="-2.3800001"
+   y="69"
+   id="tspan2561">Render resolution</tspan></text>
+      <path
+         d="m 0,-3 h 51.2771 v 121.296 l -3,-3 H 81.554 v 6 H 45.2771 V 0 l 3,3 H 0 Z m 78.554,112.296 18,9 -18,9 z"
+         transform="matrix(1,0,0,-1,325,384.296)"
+         id="path2565" />
+      <rect
+         x="475"
+         y="302"
+         width="251"
+         height="98"
+         stroke="#000000"
+         stroke-width="2"
+         stroke-miterlimit="8"
+         fill="#ffffff"
+         id="rect2567" />
+      <text
+         font-family="Calibri, Calibri_MSFontService, sans-serif"
+         font-weight="400"
+         font-size="20px"
+         transform="translate(543.899,324)"
+         id="text2577">Output<tspan
+   font-size="20px"
+   x="62.75"
+   y="0"
+   id="tspan2569">buffer</tspan><tspan
+   font-size="14px"
+   x="-9.25"
+   y="18"
+   id="tspan2571">R16G16B16A16_FLOAT</tspan><tspan
+   font-size="14px"
+   x="13.12"
+   y="52"
+   id="tspan2573">Previous frame</tspan><tspan
+   font-size="14px"
+   x="-11"
+   y="69"
+   id="tspan2575">Presentation resolution</tspan></text>
+      <path
+         d="m 325,263 h 81.554 v 6 H 325 Z m 78.554,-6 18,9 -18,9 z"
+         id="path2579" />
+      <rect
+         x="475"
+         y="244"
+         width="251"
+         height="40"
+         fill="#ffffff"
+         id="rect2581" />
+      <path
+         d="M 477,353.666 H 438 V 261 h 22 v 6 h -19 l 3,-3 v 86.666 l -3,-3 h 36 z M 457,255 l 18,9 -18,9 z"
+         fill="#ffffff"
+         id="path2583" />
+    </g>
+  </g>
+</svg>
