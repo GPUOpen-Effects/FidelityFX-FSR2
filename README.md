@@ -243,7 +243,7 @@ Applications wishing to do this can call the [`ffxFsr2ContextGenerateReactiveMas
 FSR2 provides two values which control the exposure used when performing upscaling. They are as follows:
 
 1. **Pre-exposure** a value by which we divide the input signal to get back to the original signal produced by the game before any packing into lower precision render targets.
-2. **Expsoure** a value which is multiplied against the result of the pre-exposed color value.
+2. **Exposure** a value which is multiplied against the result of the pre-exposed color value.
 
 The exposure value should match that which the application uses during any subsequent tonemapping passes performed by the application. This means FSR2 will operate consistently with what is likely to be visible in the final tonemapped image. 
 
