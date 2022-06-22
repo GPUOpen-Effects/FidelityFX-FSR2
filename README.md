@@ -112,7 +112,7 @@ To use FSR2 you should follow the steps below:
 
 14. Applications should expose [scaling modes](#scaling-modes), in their user interface in the following order: Quality, Balanced, Performance, and (optionally) Ultra Performance.
 
-15. Applications should also expose a sharpening slider to allow end users to acheive additional quality.
+15. Applications should also expose a sharpening slider to allow end users to achieve additional quality.
 
 # Integration guidelines
 
@@ -219,7 +219,7 @@ Internally, FSR2 uses 16bit quantities to represent motion vectors in many cases
 FSR2 will perform better quality upscaling when more objects provide their motion vectors. It is therefore advised that all opaque, alpha-tested and alpha-blended objects should write their motion vectors for all covered pixels. If vertex shader effects are applied - such as scrolling UVs - these calculations should also be factored into the calculation of motion for the best results. For alpha-blended objects it is also strongly advised that the alpha value of each covered pixel is stored to the corresponding pixel in the [reactive mask](#reactive-mask). This will allow FSR2 to perform better handling of alpha-blended objects during upscaling. The reactive mask is especially important for alpha-blended objects where writing motion vectors might be prohibitive, such as particles.
 
 ## Reactive mask
-In the context of FSR2, the term "reactivity" means how much influence the samples rendered for the current frame have over the production of the final upscaled image. Typically, samples rendered for the current frame contribute a relatively modest amount to the result computed by FSR2; however, there are exceptions. To produce the best results for fast moving, alpha-blended objects, FSR2 requires the [Reproject & accumulate](#reproject-accumulate) stage to become more reactive for such pixels. As there is no good way to determine from either color, depth or motion vectors which pixels have been rendered using alpha blending, FSR2 performs best when applications explicity mark such areas.
+In the context of FSR2, the term "reactivity" means how much influence the samples rendered for the current frame have over the production of the final upscaled image. Typically, samples rendered for the current frame contribute a relatively modest amount to the result computed by FSR2; however, there are exceptions. To produce the best results for fast moving, alpha-blended objects, FSR2 requires the [Reproject & accumulate](#reproject-accumulate) stage to become more reactive for such pixels. As there is no good way to determine from either color, depth or motion vectors which pixels have been rendered using alpha blending, FSR2 performs best when applications explicitly mark such areas.
 
 Therefore, it is strongly encouraged that applications provide a reactive mask to FSR2. The reactive mask guides FSR2 on where it should reduce its reliance on historical information when compositing the current pixel, and instead allow the current frame's samples to contribute more to the final result. The reactive mask allows the application to provide a value from [0..1] where 0 indicates that the pixel is not at all reactive (and should use the default FSR2 composition strategy), and a value of 1 indicates the pixel should be fully reactive. 
 
@@ -243,7 +243,7 @@ Applications wishing to do this can call the [`ffxFsr2ContextGenerateReactiveMas
 FSR2 provides two values which control the exposure used when performing upscaling. They are as follows:
 
 1. **Pre-exposure** a value by which we divide the input signal to get back to the original signal produced by the game before any packing into lower precision render targets.
-2. **Expsoure** a value which is multiplied against the result of the pre-exposed color value.
+2. **Exposure** a value which is multiplied against the result of the pre-exposed color value.
 
 The exposure value should match that which the application uses during any subsequent tonemapping passes performed by the application. This means FSR2 will operate consistently with what is likely to be visible in the final tonemapped image. 
 
@@ -274,7 +274,7 @@ With any image upscaling approach is it important to understand how to place oth
 | Post processing A              | Post processing B    |
 |--------------------------------|----------------------|
 | Screenspace reflections        | Film grain           |
-| Screenspace ambient occlusion  | Chromatic abberation | 
+| Screenspace ambient occlusion  | Chromatic aberration | 
 | Denoisers (shadow, reflections)| Vignette             |
 | Exposure (optional)            | Tonemapping          |
 |                                | Bloom                |
@@ -296,7 +296,7 @@ ffx_types.h
 ffx_util.h
 ```
 
-To use the FSR2 API, you should link `ffx_fsr2_api_x64.lib` which will provide the symbols for the application-facing APIs. However, FSR2's API has a modular backend, which means that different graphics APIs and platforms may be targetted through the use of a matching backend. Therefore, you should further include the backend lib matching your requirements, referencing the table below.
+To use the FSR2 API, you should link `ffx_fsr2_api_x64.lib` which will provide the symbols for the application-facing APIs. However, FSR2's API has a modular backend, which means that different graphics APIs and platforms may be targeted through the use of a matching backend. Therefore, you should further include the backend lib matching your requirements, referencing the table below.
 
 | Target              | Library name            |
 |---------------------|-------------------------|
@@ -473,7 +473,7 @@ Each pass stage of the algorithm is laid out in the sections following this one,
 The compute luminance pyramid stage has two responsibilities:
 
 1. To produce a lower resolution version of the input color's luminance. This is used by shading change detection in the accumulation pass.
-2. To produce a 1x1 exposure texture which is optionally used by the exposure calculations of the [Adjust input color](#adjust-input-color) stage to apply tonemapping, and the [Reproject & Accumulate](#project-and-accumulate) stage for reversing local tonemapping ahead of producing an ouput from FSR2.
+2. To produce a 1x1 exposure texture which is optionally used by the exposure calculations of the [Adjust input color](#adjust-input-color) stage to apply tonemapping, and the [Reproject & Accumulate](#project-and-accumulate) stage for reversing local tonemapping ahead of producing an output from FSR2.
 
 
 ### Resource inputs
@@ -496,7 +496,7 @@ The following table contains all resources produced or modified by the [Compute 
 | Current luminance           | Current frame   | `Render * 0.5`   | `R16_FLOAT`             | Texture   | A texture at 50% of render resolution texture which contains the luminance of the current frame. |
 
 ### Description
-The [Compute luminance pyramid](#compute-luminance-pyramid) stage is implemented using FidelityFX [Single Pass Downsampler](single-pass-downsampler.md), an optimized technique for producing mipmap chains using a single compute shader dispatch. Instead of the conventional (full) pyramidal approach, SPD provides a mechanism to produce a specific set of mipmap levels for an arbitrary input texture, as well as performing arbitrary calculations on that data as we store it to the target location in memory. In FSR2, we are interested in producing in upto two intermediate resources depending on the configuration of the [`FfxFsr2Context`](../src/ffx-fsr2-api/ffx_fsr2.h#L164). The first resource is a low-resolution representation of the current luminance, this is used later in FSR2 to attempt to detect shading changes. The second is the exposure value, and while it is always computed, it is only used by subsequent stages if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](../src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](../src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](../src/ffx-fsr2-api/ffx_fsr2.h#L101) structure upon context creation. The exposure value - either from the application, or the [Compute luminance pyramid](#compute-luminance-pyramid) stage - is used in the [Adjust input color](#adjust-input-color) stage of FSR2, as well as by the [Reproject & Accumulate](#project-and-accumulate) stage.
+The [Compute luminance pyramid](#compute-luminance-pyramid) stage is implemented using FidelityFX [Single Pass Downsampler](single-pass-downsampler.md), an optimized technique for producing mipmap chains using a single compute shader dispatch. Instead of the conventional (full) pyramidal approach, SPD provides a mechanism to produce a specific set of mipmap levels for an arbitrary input texture, as well as performing arbitrary calculations on that data as we store it to the target location in memory. In FSR2, we are interested in producing in up to two intermediate resources depending on the configuration of the [`FfxFsr2Context`](../src/ffx-fsr2-api/ffx_fsr2.h#L164). The first resource is a low-resolution representation of the current luminance, this is used later in FSR2 to attempt to detect shading changes. The second is the exposure value, and while it is always computed, it is only used by subsequent stages if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](../src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](../src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](../src/ffx-fsr2-api/ffx_fsr2.h#L101) structure upon context creation. The exposure value - either from the application, or the [Compute luminance pyramid](#compute-luminance-pyramid) stage - is used in the [Adjust input color](#adjust-input-color) stage of FSR2, as well as by the [Reproject & Accumulate](#project-and-accumulate) stage.
 
 ![alt text](docs/media/super-resolution-temporal/auto-exposure.svg "A diagram showing the mipmap levels written by auto-exposure.")
 
@@ -567,7 +567,7 @@ As the luminance buffer is persistent (it is not available for aliasing, or clea
 | Green   | n-2                                             | n - 1                                         |
 | Blue    | n-3                                             | n - 2                                         |
 
-The alpha channel of the luminance history buffer contains a measure of the stability of the luminance over the currrent frame, and the three frames that came before it. This is computed in the following way:
+The alpha channel of the luminance history buffer contains a measure of the stability of the luminance over the current frame, and the three frames that came before it. This is computed in the following way:
 
 ``` HLSL
 float stabilityValue = 1.0f;
@@ -607,7 +607,7 @@ The following table contains all of the resources which are produced by the reco
 | Dilated motion vectors              | Current frame   | Render     | `R16G16_FLOAT`         | Texture    | A texture containing dilated 2D motion vectors computed from the application's 2D motion vector buffer. The red and green channel contains the two-dimensional motion vectors in NDC space. |
 
 ### Description
-The first step of the [Reconstruct & dilate](#reconstruct-and-dilate) stage is to compute the dilated depth values and motion vectors from the application's depth values and motion vectors for the current frame. Dilated depth values and motion vectors emphasise the edges of geometry which has been rendered into the depth buffer. This is because the edges of geometry will often introduce discontinuities into a contiguous series of depth values, meaning that as depth values and motion vectors are dilated, they will naturally follow the contours of the geometric edges present in the depth buffer. In order to compute the dilated depth values and motion vectors, FSR2 looks at the depth values for a 3x3 neighbourhood for each pixel and then selects the depth values and motion vectors in that neighbourhood where the depth value is nearest to the camera. In the diagram below, you can see how the central pixel of the 3x3 kernel is updated with the depth value and motion vectors from the pixel with the largest depth value - the pixel on the central, right hand side.
+The first step of the [Reconstruct & dilate](#reconstruct-and-dilate) stage is to compute the dilated depth values and motion vectors from the application's depth values and motion vectors for the current frame. Dilated depth values and motion vectors emphasize the edges of geometry which has been rendered into the depth buffer. This is because the edges of geometry will often introduce discontinuities into a contiguous series of depth values, meaning that as depth values and motion vectors are dilated, they will naturally follow the contours of the geometric edges present in the depth buffer. In order to compute the dilated depth values and motion vectors, FSR2 looks at the depth values for a 3x3 neighbourhood for each pixel and then selects the depth values and motion vectors in that neighbourhood where the depth value is nearest to the camera. In the diagram below, you can see how the central pixel of the 3x3 kernel is updated with the depth value and motion vectors from the pixel with the largest depth value - the pixel on the central, right-hand side.
 
 As this stage is the first time that motion vectors are consumed by FSR2, this is where motion vector scaling is applied if using the FSR2 host API. Motion vector scaling factors provided via the [`motionVectorScale`](../src/ffx-fsr2-api/ffx_fsr2.h#L125) field of the [`FfxFsr2DispatchDescription`](../src/ffx-fsr2-api/ffx_fsr2.h#L114) structure and allows you to transform non-screenspace motion vectors into screenspace motion vectors which FSR2 expects.
 
