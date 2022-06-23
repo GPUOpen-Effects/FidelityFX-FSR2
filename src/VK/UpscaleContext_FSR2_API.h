@@ -38,14 +38,14 @@ class UpscaleContext_FSR2_API : public UpscaleContext
 public:
     UpscaleContext_FSR2_API(UpscaleType type, std::string name);
 
-    virtual std::string         Name() { return "FSR 2.0 API"; }
-    virtual void                OnCreate(const FfxUpscaleInitParams& initParams);
-    virtual void                OnDestroy();
-    virtual void                OnCreateWindowSizeDependentResources(VkImageView input, VkImageView output, uint32_t renderWidth, uint32_t renderHeight, uint32_t displayWidth, uint32_t displayHeight, bool hdr);
-    virtual void                OnDestroyWindowSizeDependentResources();
-    virtual void                BuildDevUI(UIState* pState) override;
-    virtual void                GenerateReactiveMask(VkCommandBuffer pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState);
-    virtual void                Draw(VkCommandBuffer commandBuffer, const FfxUpscaleSetup& cameraSetup, UIState* pState);
+    std::string         Name() override { return "FSR 2.0 API"; }
+    void                OnCreate(const FfxUpscaleInitParams& initParams) override;
+    void                OnDestroy() override;
+    void                OnCreateWindowSizeDependentResources(VkImageView input, VkImageView output, uint32_t renderWidth, uint32_t renderHeight, uint32_t displayWidth, uint32_t displayHeight, bool hdr) override;
+    void                OnDestroyWindowSizeDependentResources() override;
+    void                BuildDevUI(UIState* pState) override;
+    void                GenerateReactiveMask(VkCommandBuffer pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState) override;
+    void                Draw(VkCommandBuffer commandBuffer, const FfxUpscaleSetup& cameraSetup, UIState* pState) override;
 
 private:
     FfxFsr2ContextDescription   initializationParameters = {};
