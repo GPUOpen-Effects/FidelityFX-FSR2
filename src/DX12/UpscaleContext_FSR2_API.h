@@ -38,21 +38,21 @@ class UpscaleContext_FSR2_API : public UpscaleContext
 public:
     UpscaleContext_FSR2_API(UpscaleType type, std::string name);
 
-    virtual std::string         Name() { return "FSR 2.0 API"; }
-    virtual void                OnCreate(const FfxUpscaleInitParams& initParams);
-    virtual void                OnDestroy();
-    virtual void                OnCreateWindowSizeDependentResources(
+    std::string         Name() override { return "FSR 2.0 API"; }
+    void                OnCreate(const FfxUpscaleInitParams& initParams) override;
+    void                OnDestroy() override;
+    void                OnCreateWindowSizeDependentResources(
                                     ID3D12Resource* input,
                                     ID3D12Resource* output,
                                     uint32_t renderWidth,
                                     uint32_t renderHeight,
                                     uint32_t displayWidth,
                                     uint32_t displayHeight,
-                                    bool hdr);
-    virtual void                OnDestroyWindowSizeDependentResources();
-    virtual void                BuildDevUI(UIState* pState) override;
-    virtual void                GenerateReactiveMask(ID3D12GraphicsCommandList* pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState);
-    virtual void                Draw(ID3D12GraphicsCommandList* pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState);
+                                    bool hdr) override;
+    void                OnDestroyWindowSizeDependentResources() override;
+    void                BuildDevUI(UIState* pState) override;
+    void                GenerateReactiveMask(ID3D12GraphicsCommandList* pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState) override;
+    void                Draw(ID3D12GraphicsCommandList* pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState) override;
 
 private:
     void ReloadPipelines();
