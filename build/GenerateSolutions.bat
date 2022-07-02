@@ -1,6 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: Ensure a consistent working directory location. 
+:: All referenced paths are relative to this.
+pushd %~dp0
+
 echo Checking pre-requisites... 
 
 :: Check if CMake is installed
@@ -16,12 +20,11 @@ if %errorlevel% NEQ 0 (
 if not exist ..\libs\cauldron\common.cmake (
     echo File: common.cmake  doesn't exist in '.\libs\cauldron\'  -  Initializing submodule... 
 
-    :: attempt to initialize submodule
-    cd ..
+    :: attempt to initialize submodules
+    pushd ..
     echo.
-    git submodule sync --recursive
     git submodule update --init --recursive
-    cd build 
+    popd
 
 
     :: check if submodule initialized properly
@@ -39,20 +42,24 @@ if not exist ..\libs\cauldron\common.cmake (
     echo    Cauldron   - Ready.
 )
 
+:: Call CMake
+mkdir DX12
+pushd DX12
+cmake -A x64 ..\.. -DGFX_API=DX12
+popd
+
+
 :: Check if VULKAN_SDK is installed but don't bail out
 if "%VULKAN_SDK%"=="" (
     echo Vulkan SDK is not installed -Environment variable VULKAN_SDK is not defined- : Please install the latest Vulkan SDK from LunarG.
 ) else (
     echo    Vulkan SDK - Ready : %VULKAN_SDK%
+
+    mkdir VK
+    pushd VK
+    cmake -A x64 ..\.. -DGFX_API=VK
+    popd
 )
 
-:: Call CMake
-mkdir DX12
-cd DX12
-cmake -A x64 ..\.. -DGFX_API=DX12
-cd ..
 
-mkdir VK
-cd VK
-cmake -A x64 ..\.. -DGFX_API=VK
-cd ..
+popd
