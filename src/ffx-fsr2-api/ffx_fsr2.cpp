@@ -29,6 +29,7 @@
 #include "shaders/ffx_fsr1.h"
 #include "shaders/ffx_spd.h"
 #include "shaders/ffx_fsr2_callbacks_hlsl.h"
+#include <cmath>
 
 #include "ffx_fsr2_maximum_bias.h"
 
@@ -157,7 +158,7 @@ FfxConstantBuffer globalFsr2ConstantBuffers[3] = {
 // Lanczos
 static float lanczos2(float value)
 {
-    return abs(value) < FFX_EPSILON ? 1.f : (sinf(FFX_PI * value) / (FFX_PI * value)) * (sinf(0.5f * FFX_PI * value) / (0.5f * FFX_PI * value));
+    return std::abs(value) < FFX_EPSILON ? 1.f : (sinf(FFX_PI * value) / (FFX_PI * value)) * (sinf(0.5f * FFX_PI * value) / (0.5f * FFX_PI * value));
 }
 
 // Calculate halton number for index and base.
