@@ -42,6 +42,7 @@
 
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_samplerless_texture_functions : require
+#extension GL_EXT_shader_image_load_formatted : require
 
 #define FSR2_BIND_SRV_EXPOSURE                               0
 #define FSR2_BIND_SRV_TRANSPARENCY_AND_COMPOSITION_MASK      1
