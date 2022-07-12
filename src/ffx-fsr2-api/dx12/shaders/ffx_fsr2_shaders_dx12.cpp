@@ -388,6 +388,6 @@ FfxErrorCode fsr2GetPermutationBlobByIndex(
     }
 
     // return an empty blob
-    memset(&outBlob, 0, sizeof(Fsr2ShaderBlobDX12));
+    memset(outBlob, 0, sizeof(Fsr2ShaderBlobDX12));
     return FFX_OK;
 }
