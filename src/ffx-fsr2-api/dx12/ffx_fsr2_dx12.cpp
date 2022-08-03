@@ -323,7 +323,7 @@ FfxSurfaceFormat ffxGetSurfaceFormatDX12(DXGI_FORMAT format)
 }
 
 // register a DX12 resource to the backend
-FfxResource ffxGetResourceDX12(FfxFsr2Context* context, ID3D12Resource* dx12Resource, wchar_t* name, FfxResourceStates state, UINT shaderComponentMapping)
+FfxResource ffxGetResourceDX12(FfxFsr2Context* context, ID3D12Resource* dx12Resource, const wchar_t* name, FfxResourceStates state, UINT shaderComponentMapping)
 {
     FfxResource resource = {};
     resource.resource = reinterpret_cast<void*>(dx12Resource);
