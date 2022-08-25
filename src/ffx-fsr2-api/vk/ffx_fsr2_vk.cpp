@@ -809,10 +809,6 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     // make sure the extra parameters were already passed in
     FFX_ASSERT(backendContext->physicalDevice != NULL);
 
-    // if vkGetDeviceProcAddr is NULL, use the one from the vulkan header
-    if (backendContext->vkFunctionTable.vkGetDeviceProcAddr == NULL)
-        backendContext->vkFunctionTable.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
-
     if (vkDevice != NULL) {
         backendContext->device = vkDevice;
     }
