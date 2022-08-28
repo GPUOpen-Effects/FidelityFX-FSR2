@@ -51,7 +51,7 @@ You can find the binaries for FidelityFX FSR in the release section on GitHub.
 	- [Camera jump cuts](#camera-jump-cuts)
     - [Mipmap biasing](#mipmap-biasing)
     - [HDR support](#hdr-support)
-    - [Falling back to 32bit floating point](#falling-back-to-32bit-floating-point)
+    - [Falling back to 32-bit floating point](#falling-back-to-32-bit-floating-point)
     - [64-wide wavefronts](#64-wide-wavefronts)
 - [The technique](#the-technique)
     - [Algorithm structure](#algorithm-structure)
