@@ -48,12 +48,12 @@ void Renderer::OnCreate(Device *pDevice, SwapChain *pSwapChain, float FontSize, 
     m_ConstantBufferRing.OnCreate(pDevice, backBufferCount, constantBuffersMemSize, "Uniforms");
 
     // Create a 'static' pool for vertices and indices 
-    const uint32_t staticGeometryMemSize = (1024) * 1024 * 1024;
+    const uint32_t staticGeometryMemSize = (5 * 128) * 1024 * 1024;
     m_VidMemBufferPool.OnCreate(pDevice, staticGeometryMemSize, true, "StaticGeom");
 
     // Create a 'static' pool for vertices and indices in system memory
-    const uint32_t systemGeometryMemSize = 32 * 1024;
-    m_SysMemBufferPool.OnCreate(pDevice, systemGeometryMemSize, false, "PostProcGeom");
+    //const uint32_t systemGeometryMemSize = 16 * 1024;
+   // m_SysMemBufferPool.OnCreate(pDevice, systemGeometryMemSize, false, "PostProcGeom");
 
     // initialize the GPU time stamps module
     m_GPUTimer.OnCreate(pDevice, backBufferCount);
@@ -82,16 +82,17 @@ void Renderer::OnCreate(Device *pDevice, SwapChain *pSwapChain, float FontSize, 
         if (bInvertedDepth) fullGBuffer |= GBUFFER_INVERTED_DEPTH;
 
         bool bClear = true;
-        m_RenderPassFullGBufferWithClear.OnCreate(&m_GBuffer, fullGBuffer, bClear,"m_RenderPassFullGBufferWithClear");
+        m_RenderPassFullGBufferWithClear.OnCreate(&m_GBuffer, fullGBuffer, bClear, "m_RenderPassFullGBufferWithClear");
         m_RenderPassFullGBuffer.OnCreate(&m_GBuffer, fullGBuffer, !bClear, "m_RenderPassFullGBuffer");
         m_RenderPassJustDepthAndHdr.OnCreate(&m_GBuffer, GBUFFER_DEPTH | GBUFFER_FORWARD, !bClear, "m_RenderPassJustDepthAndHdr");
+        m_RenderPassFullGBufferNoDepthWrite.OnCreate(&m_GBuffer, fullGBuffer, !bClear, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, "m_RenderPassFullGBufferNoDepthWrite");
     }
 
     // Create render pass shadow, will clear contents
     {
         VkAttachmentDescription depthAttachments;
         AttachClearBeforeUse(VK_FORMAT_D32_SFLOAT, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, &depthAttachments);
-        m_Render_pass_shadow = CreateRenderPassOptimal(m_pDevice->GetDevice(), 0, NULL, &depthAttachments);
+        m_Render_pass_shadow = CreateRenderPassOptimal(m_pDevice->GetDevice(), 0, NULL, &depthAttachments, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     }
 
     m_SkyDome.OnCreate(pDevice, m_RenderPassJustDepthAndHdr.GetRenderPass(), &m_UploadHeap, VK_FORMAT_R16G16B16A16_SFLOAT, &m_ResourceViewHeaps, &m_ConstantBufferRing, &m_VidMemBufferPool, "..\\media\\cauldron-media\\envmaps\\papermill\\diffuse.dds", "..\\media\\cauldron-media\\envmaps\\papermill\\specular.dds", VK_SAMPLE_COUNT_1_BIT, m_bInvertedDepth);
@@ -114,7 +115,14 @@ void Renderer::OnCreate(Device *pDevice, SwapChain *pSwapChain, float FontSize, 
     m_VidMemBufferPool.UploadData(m_UploadHeap.GetCommandList());
     m_UploadHeap.FlushAndFinish();
 
+    m_pGPUParticleSystem = IParticleSystem::CreateGPUSystem("..\\media\\atlas.dds");
+    m_pGPUParticleSystem->OnCreateDevice(*pDevice, m_UploadHeap, m_ResourceViewHeaps, m_VidMemBufferPool, m_ConstantBufferRing, m_RenderPassFullGBufferNoDepthWrite.GetRenderPass());
+
     m_GpuFrameRateLimiter.OnCreate(pDevice, &m_ConstantBufferRing, &m_ResourceViewHeaps);
+
+    m_AnimatedTextures.OnCreate( *pDevice, m_UploadHeap, m_VidMemBufferPool, m_RenderPassFullGBufferWithClear.GetRenderPass(), m_ResourceViewHeaps, m_ConstantBufferRing );
+
+    ResetScene();
 }
 
 //--------------------------------------------------------------------------------------
@@ -124,7 +132,12 @@ void Renderer::OnCreate(Device *pDevice, SwapChain *pSwapChain, float FontSize, 
 //--------------------------------------------------------------------------------------
 void Renderer::OnDestroy()
 {
+    m_AnimatedTextures.OnDestroy();
     m_GpuFrameRateLimiter.OnDestroy();
+
+    m_pGPUParticleSystem->OnDestroyDevice();
+    delete m_pGPUParticleSystem;
+    m_pGPUParticleSystem = nullptr;
 
     m_AsyncPool.Flush();
 
@@ -140,14 +153,18 @@ void Renderer::OnDestroy()
     m_SkyDomeProc.OnDestroy();
     m_SkyDome.OnDestroy();
 
+    m_RenderPassFullGBufferNoDepthWrite.OnDestroy();
     m_RenderPassFullGBufferWithClear.OnDestroy();
     m_RenderPassJustDepthAndHdr.OnDestroy();
     m_RenderPassFullGBuffer.OnDestroy();
     m_GBuffer.OnDestroy();
 
-    m_pUpscaleContext->OnDestroy();
-    delete m_pUpscaleContext;
-    m_pUpscaleContext = NULL;
+    if (m_pUpscaleContext)
+    {
+        m_pUpscaleContext->OnDestroy();
+        delete m_pUpscaleContext;
+        m_pUpscaleContext = NULL;
+    }
 
     vkDestroyRenderPass(m_pDevice->GetDevice(), m_Render_pass_shadow, nullptr);
        
@@ -179,6 +196,7 @@ void Renderer::OnCreateWindowSizeDependentResources(SwapChain *pSwapChain, UISta
     m_RenderPassFullGBufferWithClear.OnCreateWindowSizeDependentResources(m_Width, m_Height);
     m_RenderPassJustDepthAndHdr.OnCreateWindowSizeDependentResources(m_Width, m_Height);
     m_RenderPassFullGBuffer.OnCreateWindowSizeDependentResources(m_Width, m_Height);
+    m_RenderPassFullGBufferNoDepthWrite.OnCreateWindowSizeDependentResources(m_Width, m_Height);
 
     bool renderNative = (pState->m_nUpscaleType == UPSCALE_TYPE_NATIVE);
     bool hdr = (pSwapChain->GetDisplayMode() != DISPLAYMODE_SDR);
@@ -207,6 +225,8 @@ void Renderer::OnCreateWindowSizeDependentResources(SwapChain *pSwapChain, UISta
 
     m_ImGUI.UpdatePipeline((pSwapChain->GetDisplayMode() == DISPLAYMODE_SDR) ? pSwapChain->GetRenderPass() : m_RenderPassDisplayOutput);
 
+    m_pGPUParticleSystem->OnResizedSwapChain(pState->renderWidth, pState->renderHeight, m_GBuffer.m_DepthBuffer, m_RenderPassFullGBufferNoDepthWrite.GetFramebuffer());
+
     // Lazy Upscale context generation: 
     if ((m_pUpscaleContext == NULL) || (pState->m_nUpscaleType != m_pUpscaleContext->Type()))
     {
@@ -223,7 +243,7 @@ void Renderer::OnCreateWindowSizeDependentResources(SwapChain *pSwapChain, UISta
         UpscaleContext::FfxUpscaleInitParams upscaleParams = { pState->m_nUpscaleType, m_bInvertedDepth, m_pDevice, pSwapChain->GetFormat(), &m_UploadHeap, backBufferCount };
         m_pUpscaleContext = UpscaleContext::CreateUpscaleContext(upscaleParams);
     }
-    m_pUpscaleContext->OnCreateWindowSizeDependentResources(nullptr, m_displayOutputSRV, pState->renderWidth, pState->renderHeight, pState->displayWidth, pState->displayHeight, hdr);
+    m_pUpscaleContext->OnCreateWindowSizeDependentResources(nullptr, m_displayOutputSRV, pState->renderWidth, pState->renderHeight, pState->displayWidth, pState->displayHeight, true);
 }
 
 //--------------------------------------------------------------------------------------
@@ -233,6 +253,10 @@ void Renderer::OnCreateWindowSizeDependentResources(SwapChain *pSwapChain, UISta
 //--------------------------------------------------------------------------------------
 void Renderer::OnDestroyWindowSizeDependentResources()
 {
+    m_pDevice->GPUFlush();
+
+    m_pGPUParticleSystem->OnReleasingSwapChain();
+
     vkDestroyImageView(m_pDevice->GetDevice(), m_OpaqueTextureSRV, 0);
     vkDestroyFramebuffer(m_pDevice->GetDevice(), m_FramebufferDisplayOutput, 0);
     vkDestroyImageView(m_pDevice->GetDevice(), m_displayOutputSRV, 0);
@@ -253,6 +277,7 @@ void Renderer::OnDestroyWindowSizeDependentResources()
     m_RenderPassFullGBufferWithClear.OnDestroyWindowSizeDependentResources();
     m_RenderPassJustDepthAndHdr.OnDestroyWindowSizeDependentResources();
     m_RenderPassFullGBuffer.OnDestroyWindowSizeDependentResources();
+    m_RenderPassFullGBufferNoDepthWrite.OnDestroyWindowSizeDependentResources();
     m_GBuffer.OnDestroyWindowSizeDependentResources();
 
     // destroy upscale context
@@ -556,6 +581,7 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
 
     m_pUpscaleContext->PreDraw(pState);
 
+    float fLightMod = 1.f;
     // Sets the perFrame data 
     per_frame *pPerFrame = NULL;
     if (m_pGLTFTexturesAndBuffers)
@@ -576,6 +602,27 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
         pPerFrame->lodBias = pState->mipBias;
         m_pGLTFTexturesAndBuffers->SetPerFrameConstants();
         m_pGLTFTexturesAndBuffers->SetSkinningMatricesForSkeletons();
+    }
+
+    {
+        m_state.flags = IParticleSystem::PF_Streaks | IParticleSystem::PF_DepthCull | IParticleSystem::PF_Sort;
+        m_state.flags |= pState->nReactiveMaskMode == REACTIVE_MASK_MODE_ON ? IParticleSystem::PF_Reactive : 0;
+
+        const Camera& camera = pState->camera;
+        m_state.constantData.m_ViewProjection = camera.GetProjection() * camera.GetView();
+        m_state.constantData.m_View = camera.GetView();
+        m_state.constantData.m_ViewInv = math::inverse(camera.GetView());
+        m_state.constantData.m_Projection = camera.GetProjection();
+        m_state.constantData.m_ProjectionInv = math::inverse(camera.GetProjection());
+        m_state.constantData.m_SunDirection = math::Vector4(0.7f, 0.7f, 0, 0);
+        m_state.constantData.m_SunColor = math::Vector4(0.8f, 0.8f, 0.7f, 0);
+        m_state.constantData.m_AmbientColor = math::Vector4(0.2f, 0.2f, 0.3f, 0);
+
+        m_state.constantData.m_SunColor *= fLightMod;
+        m_state.constantData.m_AmbientColor *= fLightMod;
+
+        m_state.constantData.m_FrameTime = pState->m_bPlayAnimations ? (0.001f * (float)pState->deltaTime) : 0.0f;
+        PopulateEmitters(pState->m_bPlayAnimations, pState->m_activeScene, 0.001f * (float)pState->deltaTime);
     }
 
     // Render all shadow maps
@@ -646,6 +693,12 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
             vkCmdSetViewport(cmdBuf1, 0, 1, &vpr);
 
             m_GLTFPBR->DrawBatchList(cmdBuf1, &opaque, bWireframe);
+
+            if (pState->bRenderAnimatedTextures)
+            {
+                m_AnimatedTextures.Render(cmdBuf1, pState->m_bPlayAnimations ? (0.001f * (float)pState->deltaTime) : 0.0f, pState->m_fTextureAnimationSpeed, pState->bCompositionMask, Cam);
+            }
+
             m_GPUTimer.GetTimeStamp(cmdBuf1, "PBR Opaque");
 
             m_RenderPassFullGBufferWithClear.EndPass(cmdBuf1);
@@ -683,7 +736,7 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
             m_RenderPassJustDepthAndHdr.EndPass(cmdBuf1);
         }
 
-        if (pState->bUseFsr2AutoReactive|true)
+        if (pState->nReactiveMaskMode == REACTIVE_MASK_MODE_AUTOGEN)
         {
             // Copy resource before we render transparent stuff
             {
@@ -764,13 +817,34 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
                 barriers[1].newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 barriers[1].image = m_GBuffer.m_HDR.Resource();
 
-                vkCmdPipelineBarrier(cmdBuf1, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 0, NULL, 2, barriers);
+                vkCmdPipelineBarrier(cmdBuf1, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 0, NULL, 2, barriers);
             }
         }
 
         // draw transparent geometry
         {
-            m_RenderPassFullGBuffer.BeginPass(cmdBuf1, currentRect);
+            if (pState->bRenderParticleSystem)
+            {
+                VkImageMemoryBarrier barrier = {};
+                barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+                barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+                barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+                barrier.subresourceRange.baseMipLevel = 0;
+                barrier.subresourceRange.levelCount = 1;
+                barrier.subresourceRange.baseArrayLayer = 0;
+                barrier.subresourceRange.layerCount = 1;
+                barrier.image = m_GBuffer.m_DepthBuffer.Resource();
+                vkCmdPipelineBarrier(cmdBuf1, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+                m_pGPUParticleSystem->Render(cmdBuf1, m_ConstantBufferRing, m_state.flags, m_state.emitters, m_state.numEmitters, m_state.constantData);
+            }
+
+            m_RenderPassFullGBufferNoDepthWrite.BeginPass(cmdBuf1, currentRect);
 
             vkCmdSetScissor(cmdBuf1, 0, 1, &srr);
             vkCmdSetViewport(cmdBuf1, 0, 1, &vpr);
@@ -779,11 +853,28 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
             m_GLTFPBR->DrawBatchList(cmdBuf1, &transparent, bWireframe);
             m_GPUTimer.GetTimeStamp(cmdBuf1, "PBR Transparent");
 
-            m_RenderPassFullGBuffer.EndPass(cmdBuf1);
+            m_RenderPassFullGBufferNoDepthWrite.EndPass(cmdBuf1);
         }
 
         // draw object's bounding boxes
         {
+            // Put the depth buffer back from the read only state to the write state
+            VkImageMemoryBarrier barrier = {};
+            barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+            barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+            barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+            barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+            barrier.subresourceRange.baseMipLevel = 0;
+            barrier.subresourceRange.levelCount = 1;
+            barrier.subresourceRange.baseArrayLayer = 0;
+            barrier.subresourceRange.layerCount = 1;
+            barrier.image = m_GBuffer.m_DepthBuffer.Resource();
+            vkCmdPipelineBarrier(cmdBuf1, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
             m_RenderPassJustDepthAndHdr.BeginPass(cmdBuf1, currentRect);
 
             vkCmdSetScissor(cmdBuf1, 0, 1, &srr);
@@ -850,7 +941,7 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
     SetPerfMarkerEnd(cmdBuf1);
 
     // if FSR2 and auto reactive mask is enabled: generate reactive mask
-    if (pState->bUseFsr2AutoReactive)
+    if (pState->nReactiveMaskMode == REACTIVE_MASK_MODE_AUTOGEN)
     {
         VkImageMemoryBarrier barrier = {};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -940,8 +1031,8 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
             barriers[1].image = m_GBuffer.m_MotionVectors.Resource();
 
             barriers[2] = barrier;
-            barriers[2].srcAccessMask = pState->bUseFsr2AutoReactive ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            barriers[2].oldLayout = pState->bUseFsr2AutoReactive ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            barriers[2].srcAccessMask = pState->nReactiveMaskMode == REACTIVE_MASK_MODE_AUTOGEN ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            barriers[2].oldLayout = pState->nReactiveMaskMode == REACTIVE_MASK_MODE_AUTOGEN ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             barriers[2].image = m_GBuffer.m_UpscaleReactive.Resource();
 
             barriers[3] = barrier;
@@ -964,7 +1055,7 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
 
             VkPipelineStageFlags srcStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
-            if (pState->bUseFsr2AutoReactive)
+            if (pState->nReactiveMaskMode == REACTIVE_MASK_MODE_AUTOGEN)
                 srcStageFlags |= VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
             vkCmdPipelineBarrier(cmdBuf1, srcStageFlags, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 0, NULL, 6, barriers);
@@ -1300,6 +1391,106 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
 
         res = vkQueueSubmit(m_pDevice->GetGraphicsQueue(), 1, &submit_info2, CmdBufExecutedFences);
         assert(res == VK_SUCCESS);
+    }
+}
+
+
+void Renderer::ResetScene()
+{
+    ZeroMemory(m_EmissionRates, sizeof(m_EmissionRates));
+
+    // Reset the particle system when the scene changes so no particles from the previous scene persist
+    m_pGPUParticleSystem->Reset();
+}
+
+void Renderer::PopulateEmitters(bool playAnimations, int activeScene, float frameTime)
+{
+    IParticleSystem::EmitterParams sparksEmitter = {};
+    IParticleSystem::EmitterParams smokeEmitter = {};
+
+    sparksEmitter.m_NumToEmit = 0;
+    sparksEmitter.m_ParticleLifeSpan = 1.0f;
+    sparksEmitter.m_StartSize  = 0.6f * 0.02f;
+    sparksEmitter.m_EndSize    = 0.4f * 0.02f;
+    sparksEmitter.m_VelocityVariance = 1.5f;
+    sparksEmitter.m_Mass = 1.0f;
+    sparksEmitter.m_TextureIndex = 1;
+    sparksEmitter.m_Streaks = true;
+
+    smokeEmitter.m_NumToEmit = 0;
+    smokeEmitter.m_ParticleLifeSpan = 50.0f;
+    smokeEmitter.m_StartSize  = 0.4f;
+    smokeEmitter.m_EndSize    = 1.0f;
+    smokeEmitter.m_VelocityVariance = 1.0f;
+    smokeEmitter.m_Mass = 0.0003f;
+    smokeEmitter.m_TextureIndex = 0;
+    smokeEmitter.m_Streaks = false;
+
+    if ( activeScene == 0 ) // scene 0 = warehouse
+    {
+        m_state.numEmitters = 2;
+        m_state.emitters[0] = sparksEmitter;
+        m_state.emitters[1] = sparksEmitter;
+
+        m_state.emitters[0].m_Position = math::Vector4(-4.15f, -1.85f, -3.8f, 1.0f);
+        m_state.emitters[0].m_PositionVariance = math::Vector4(0.1f, 0.0f, 0.0f, 1.0f);
+        m_state.emitters[0].m_Velocity = math::Vector4(0.0f,  0.08f, 0.8f, 1.0f);
+        m_EmissionRates[0].m_ParticlesPerSecond = 300.0f;
+
+        m_state.emitters[1].m_Position = math::Vector4(-4.9f, -1.5f, -4.8f, 1.0f);
+        m_state.emitters[1].m_PositionVariance = math::Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+        m_state.emitters[1].m_Velocity = math::Vector4(0.0f, 0.8f, -0.8f, 1.0f);
+        m_EmissionRates[1].m_ParticlesPerSecond = 400.0f;
+
+        m_state.constantData.m_StartColor[0] = math::Vector4(10.0f, 10.0f, 2.0f, 0.9f);
+        m_state.constantData.m_EndColor[0] = math::Vector4(10.0f, 10.0f, 0.0f, 0.1f);
+        m_state.constantData.m_StartColor[1] = math::Vector4(10.0f, 10.0f, 2.0f, 0.9f);
+        m_state.constantData.m_EndColor[1] = math::Vector4(10.0f, 10.0f, 0.0f, 0.1f);
+    }
+    else if (activeScene == 1) // Sponza
+    {
+        m_state.numEmitters = 2;
+        m_state.emitters[0] = smokeEmitter;
+        m_state.emitters[1] = sparksEmitter;
+
+        m_state.emitters[0].m_Position = math::Vector4(-13.0f, 0.0f, 1.4f, 1.0f);
+        m_state.emitters[0].m_PositionVariance = math::Vector4(0.1f, 0.0f, 0.1f, 1.0f);
+        m_state.emitters[0].m_Velocity = math::Vector4(0.0f, 0.2f, 0.0f, 1.0f);
+        m_EmissionRates[0].m_ParticlesPerSecond = 10.0f;
+
+        m_state.emitters[1].m_Position = math::Vector4(-13.0f, 0.0f, -1.4f, 1.0f);
+        m_state.emitters[1].m_PositionVariance = math::Vector4(0.05f, 0.0f, 0.05f, 1.0f);
+        m_state.emitters[1].m_Velocity = math::Vector4(0.0f, 4.0f, 0.0f, 1.0f);
+        m_state.emitters[1].m_VelocityVariance = 0.5f;
+        m_state.emitters[1].m_StartSize = 0.02f;
+        m_state.emitters[1].m_EndSize = 0.02f;
+        m_state.emitters[1].m_Mass = 1.0f;
+        m_EmissionRates[1].m_ParticlesPerSecond = 500.0f;
+
+        m_state.constantData.m_StartColor[0] = math::Vector4(0.3f, 0.3f, 0.3f, 0.4f);
+        m_state.constantData.m_EndColor[0] = math::Vector4(0.4f, 0.4f, 0.4f, 0.1f);
+        m_state.constantData.m_StartColor[1] = math::Vector4(10.0f, 10.0f, 10.0f, 0.9f);
+        m_state.constantData.m_EndColor[1] = math::Vector4(5.0f, 8.0f, 5.0f, 0.1f);
+    }
+
+    // Update all our active emitters so we know how many whole numbers of particles to emit from each emitter this frame
+    for (int i = 0; i < m_state.numEmitters; i++)
+    {
+        m_state.constantData.m_EmitterLightingCenter[i] = m_state.emitters[ i ].m_Position;
+
+        if (m_EmissionRates[i].m_ParticlesPerSecond > 0.0f)
+        {
+            m_EmissionRates[i].m_Accumulation += m_EmissionRates[i].m_ParticlesPerSecond * (playAnimations ? frameTime : 0.0f);
+
+            if (m_EmissionRates[i].m_Accumulation > 1.0f)
+            {
+                float integerPart = 0.0f;
+                float fraction = modf(m_EmissionRates[i].m_Accumulation, &integerPart);
+
+                m_state.emitters[i].m_NumToEmit = (int)integerPart;
+                m_EmissionRates[i].m_Accumulation = fraction;
+            }
+        }
     }
 }
 

@@ -22,6 +22,7 @@
 cmake_minimum_required(VERSION 3.12.1)
 
 option (GFX_API_DX12 "Build with DX12" ON)
+option (GFX_API_VK "Build with Vulkan" ON)
 
 if(NOT DEFINED GFX_API)
     project (FSR2_Sample)

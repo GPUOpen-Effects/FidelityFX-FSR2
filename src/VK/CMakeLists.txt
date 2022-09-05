@@ -38,6 +38,15 @@ set(sources
     stdafx.h
     UI.cpp
     UI.h
+    ../GpuParticles/ParticleHelpers.h
+    ../GpuParticles/ParticleSystem.h
+    ../GpuParticles/ParticleSystemInternal.h
+    ../GpuParticles/vk/BufferHelper.h
+    ../GpuParticles/vk/GPUParticleSystem.cpp
+    ../GpuParticles/vk/ParallelSort.h
+    ../GpuParticles/vk/ParallelSort.cpp
+    AnimatedTexture.cpp
+    AnimatedTexture.h
     dpiawarescaling.manifest)
 
 set(fsr1_shaders_src
@@ -94,7 +103,20 @@ set(fsr2_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_rcas_pass.glsl)
 
 set(particle_shaders_src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleStructs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleHelpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/fp16util.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParallelSortCS.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleEmit.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleRender.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleSimulation.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ShaderConstants.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/SimulationBindings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-parallelsort/FFX_ParallelSort.h)
+
+set(sample_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/GPUFrameRateLimiter.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/AnimatedTexture.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/DebugBlit.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/UpscaleSpatial.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/FSRPass.hlsl)
@@ -104,12 +126,14 @@ set(APP_ICON_GPUOPEN "${CMAKE_CURRENT_SOURCE_DIR}/../common/GpuOpenIcon.rc")
 source_group("sources" FILES ${sources})
 source_group("spatial_shaders" FILES ${fsr1_shaders_src})
 source_group("fsr2_shaders" FILES ${fsr2_shaders_src})
+source_group("particle_shaders" FILES ${particle_shaders_src})
 source_group("sample_shaders" FILES ${sample_shaders_src})
 
 copyCommand("${spd_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
 copyCommand("${fsr1_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
 copyCommand("${fsr2_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
 copyCommand("${particle_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
+copyCommand("${sample_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
 
 add_executable(FSR2_Sample_VK WIN32 ${sources} ${fsr2_src} ${sample_shaders_src} ${fsr1_shaders_src} ${fsr2_shaders_src} ${particle_shaders_src} ${spd_shaders_src} ${common} ${APP_ICON_GPUOPEN})
 target_compile_definitions(FSR2_Sample_VK PRIVATE $<$<CONFIG:RelWithDebInfo>:FSR2_DEBUG_SHADERS=1>)

@@ -51,7 +51,6 @@ void FSR2Sample::OnParseCommandLine(LPSTR lpCmdLine, uint32_t* pWidth, uint32_t*
     // set some default values
     *pWidth = 1920;
     *pHeight = 1080;
-    m_activeScene = 0; //load the first one by default
     m_VsyncEnabled = false;
     m_bIsBenchmarking = false;
     m_fontSize = 13.f; // default value overridden by a json file if available
@@ -66,7 +65,7 @@ void FSR2Sample::OnParseCommandLine(LPSTR lpCmdLine, uint32_t* pWidth, uint32_t*
         *pWidth = jData.value("width", *pWidth);
         *pHeight = jData.value("height", *pHeight);
         m_fullscreenMode = jData.value("presentationMode", m_fullscreenMode);
-        m_activeScene = jData.value("activeScene", m_activeScene);
+        m_UIState.m_activeScene = jData.value("activeScene", m_UIState.m_activeScene);
         m_activeCamera = jData.value("activeCamera", m_activeCamera);
         m_isCpuValidationLayerEnabled = jData.value("CpuValidationLayerEnabled", m_isCpuValidationLayerEnabled);
         m_isGpuValidationLayerEnabled = jData.value("GpuValidationLayerEnabled", m_isGpuValidationLayerEnabled);
@@ -791,7 +790,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     LPSTR lpCmdLine,
     int nCmdShow)
 {
-    LPCSTR Name = "FidelityFX Super Resolution 2.0";
+    LPCSTR Name = "FidelityFX Super Resolution 2.1";
 
     // create new DX sample
     return RunFramework(hInstance, lpCmdLine, nCmdShow, new FSR2Sample(Name));

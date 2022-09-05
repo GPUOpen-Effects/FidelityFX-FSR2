@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#include <codecvt>  // convert string to wstring
 #include <DirectXMath.h>
 #include <d3d12.h>
 #include <d3dcompiler.h>
@@ -31,8 +32,8 @@
 
 // DX12 prototypes for functions in the backend interface
 FfxErrorCode GetDeviceCapabilitiesDX12(FfxFsr2Interface* backendInterface, FfxDeviceCapabilities* deviceCapabilities, FfxDevice device);
-FfxErrorCode CreateDeviceDX12(FfxFsr2Interface* backendInterface, FfxDevice device);
-FfxErrorCode DestroyDeviceDX12(FfxFsr2Interface* backendInterface, FfxDevice device);
+FfxErrorCode CreateBackendContextDX12(FfxFsr2Interface* backendInterface, FfxDevice device);
+FfxErrorCode DestroyBackendContextDX12(FfxFsr2Interface* backendInterface);
 FfxErrorCode CreateResourceDX12(FfxFsr2Interface* backendInterface, const FfxCreateResourceDescription* desc, FfxResourceInternal* outTexture);
 FfxErrorCode RegisterResourceDX12(FfxFsr2Interface* backendInterface, const FfxResource* inResource, FfxResourceInternal* outResourceInternal);
 FfxErrorCode UnregisterResourcesDX12(FfxFsr2Interface* backendInterface);
@@ -40,14 +41,14 @@ FfxResourceDescription GetResourceDescriptorDX12(FfxFsr2Interface* backendInterf
 FfxErrorCode DestroyResourceDX12(FfxFsr2Interface* backendInterface, FfxResourceInternal resource);
 FfxErrorCode CreatePipelineDX12(FfxFsr2Interface* backendInterface, FfxFsr2Pass passId, const FfxPipelineDescription*  desc, FfxPipelineState* outPass);
 FfxErrorCode DestroyPipelineDX12(FfxFsr2Interface* backendInterface, FfxPipelineState* pipeline);
-FfxErrorCode ScheduleRenderJobDX12(FfxFsr2Interface* backendInterface, const FfxRenderJobDescription* job);
-FfxErrorCode ExecuteRenderJobsDX12(FfxFsr2Interface* backendInterface, FfxCommandList commandList);
+FfxErrorCode ScheduleGpuJobDX12(FfxFsr2Interface* backendInterface, const FfxGpuJobDescription* job);
+FfxErrorCode ExecuteGpuJobsDX12(FfxFsr2Interface* backendInterface, FfxCommandList commandList);
 
 #define FSR2_MAX_QUEUED_FRAMES  ( 4)
 #define FSR2_MAX_RESOURCE_COUNT (64)
 #define FSR2_DESC_RING_SIZE     (FSR2_MAX_QUEUED_FRAMES * FFX_FSR2_PASS_COUNT * FSR2_MAX_RESOURCE_COUNT)
 #define FSR2_MAX_BARRIERS       (16)
-#define FSR2_MAX_RENDERJOBS     (32)
+#define FSR2_MAX_GPU_JOBS       (32)
 #define FSR2_MAX_SAMPLERS       ( 2)
 #define UPLOAD_JOB_COUNT        (16)
 
@@ -69,8 +70,8 @@ typedef struct BackendContext_DX12 {
 
     ID3D12Device*           device = nullptr;
 
-    FfxRenderJobDescription renderJobs[FSR2_MAX_RENDERJOBS] = {};
-    uint32_t                renderJobCount;
+    FfxGpuJobDescription    gpuJobs[FSR2_MAX_GPU_JOBS] = {};
+    uint32_t                gpuJobCount;
 
     uint32_t                nextStaticResource;
     uint32_t                nextDynamicResource;
@@ -113,8 +114,8 @@ FfxErrorCode ffxFsr2GetInterfaceDX12(
         FFX_ERROR_INSUFFICIENT_MEMORY);
 
     outInterface->fpGetDeviceCapabilities = GetDeviceCapabilitiesDX12;
-    outInterface->fpCreateDevice = CreateDeviceDX12;
-    outInterface->fpDestroyDevice = DestroyDeviceDX12;
+    outInterface->fpCreateBackendContext = CreateBackendContextDX12;
+    outInterface->fpDestroyBackendContext = DestroyBackendContextDX12;
     outInterface->fpCreateResource = CreateResourceDX12;
     outInterface->fpRegisterResource = RegisterResourceDX12;
     outInterface->fpUnregisterResources = UnregisterResourcesDX12;
@@ -122,8 +123,8 @@ FfxErrorCode ffxFsr2GetInterfaceDX12(
     outInterface->fpDestroyResource = DestroyResourceDX12;
     outInterface->fpCreatePipeline = CreatePipelineDX12;
     outInterface->fpDestroyPipeline = DestroyPipelineDX12;
-    outInterface->fpScheduleRenderJob = ScheduleRenderJobDX12;
-    outInterface->fpExecuteRenderJobs = ExecuteRenderJobsDX12;
+    outInterface->fpScheduleGpuJob = ScheduleGpuJobDX12;
+    outInterface->fpExecuteGpuJobs = ExecuteGpuJobsDX12;
     outInterface->scratchBuffer = scratchBuffer;
     outInterface->scratchBufferSize = scratchBufferSize;
 
@@ -268,6 +269,8 @@ DXGI_FORMAT ffxGetDX12FormatFromSurfaceFormat(FfxSurfaceFormat surfaceFormat)
             return DXGI_FORMAT_R16_SNORM;
         case(FFX_SURFACE_FORMAT_R8_UNORM):
             return DXGI_FORMAT_R8_UNORM;
+        case(FFX_SURFACE_FORMAT_R8G8_UNORM):
+            return DXGI_FORMAT_R8G8_UNORM;
         case(FFX_SURFACE_FORMAT_R32_FLOAT):
             return DXGI_FORMAT_R32_FLOAT;
         default:
@@ -323,7 +326,7 @@ FfxSurfaceFormat ffxGetSurfaceFormatDX12(DXGI_FORMAT format)
 }
 
 // register a DX12 resource to the backend
-FfxResource ffxGetResourceDX12(FfxFsr2Context* context, ID3D12Resource* dx12Resource, wchar_t* name, FfxResourceStates state, UINT shaderComponentMapping)
+FfxResource ffxGetResourceDX12(FfxFsr2Context* context, ID3D12Resource* dx12Resource, const wchar_t* name, FfxResourceStates state, UINT shaderComponentMapping)
 {
     FfxResource resource = {};
     resource.resource = reinterpret_cast<void*>(dx12Resource);
@@ -601,7 +604,7 @@ FfxErrorCode GetDeviceCapabilitiesDX12(FfxFsr2Interface* backendInterface, FfxDe
 }
 
 // initialize the DX12 backend
-FfxErrorCode CreateDeviceDX12(FfxFsr2Interface* backendInterface, FfxDevice device)
+FfxErrorCode CreateBackendContextDX12(FfxFsr2Interface* backendInterface, FfxDevice device)
 {
     HRESULT result = S_OK;
     ID3D12Device* dx12Device = reinterpret_cast<ID3D12Device*>(device);
@@ -651,12 +654,9 @@ FfxErrorCode CreateDeviceDX12(FfxFsr2Interface* backendInterface, FfxDevice devi
 }
 
 // deinitialize the DX12 backend
-FfxErrorCode DestroyDeviceDX12(FfxFsr2Interface* backendInterface, FfxDevice device)
+FfxErrorCode DestroyBackendContextDX12(FfxFsr2Interface* backendInterface)
 {
-    ID3D12Device* dx12Device = reinterpret_cast<ID3D12Device*>(device);
-
     FFX_ASSERT(NULL != backendInterface);
-    FFX_ASSERT(NULL != dx12Device);
 
     BackendContext_DX12* backendContext = (BackendContext_DX12*)backendInterface->scratchBuffer;
     backendContext->descHeapSrvCpu->Release();
@@ -675,10 +675,10 @@ FfxErrorCode DestroyDeviceDX12(FfxFsr2Interface* backendInterface, FfxDevice dev
 
     backendContext->nextStaticResource = 0;
 
-    if (dx12Device != NULL) {
+    if (backendContext->device != NULL) {
 
-        dx12Device->Release();
-        dx12Device = NULL;
+        backendContext->device->Release();
+        backendContext->device = NULL;
     }
 
     return FFX_OK;
@@ -695,8 +695,8 @@ FfxErrorCode CreateResourceDX12(
     FFX_ASSERT(NULL != createResourceDescription);
     FFX_ASSERT(NULL != outTexture);
 
-    ID3D12Device* dx12Device = reinterpret_cast<ID3D12Device*>(createResourceDescription->device);
     BackendContext_DX12* backendContext = (BackendContext_DX12*)backendInterface->scratchBuffer;
+    ID3D12Device* dx12Device = backendContext->device;
 
     FFX_ASSERT(NULL != dx12Device);
 
@@ -902,14 +902,14 @@ FfxErrorCode CreateResourceDX12(
             backendInterface->fpCreateResource(backendInterface, &uploadDescription, &copySrc);
 
             // setup the upload job
-            FfxRenderJobDescription copyJob = {
+            FfxGpuJobDescription copyJob = {
 
-                FFX_RENDER_JOB_COPY
+                FFX_GPU_JOB_COPY
             };
             copyJob.copyJobDescriptor.src = copySrc;
             copyJob.copyJobDescriptor.dst = *outTexture;
 
-            backendInterface->fpScheduleRenderJob(backendInterface, &copyJob);
+            backendInterface->fpScheduleGpuJob(backendInterface, &copyJob);
         }
     }
 
@@ -988,12 +988,11 @@ FfxErrorCode CreatePipelineDX12(
     flags |= (pipelineDescription->contextFlags & FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION) ? FSR2_SHADER_PERMUTATION_JITTER_MOTION_VECTORS : 0;
     flags |= (pipelineDescription->contextFlags & FFX_FSR2_ENABLE_DEPTH_INVERTED) ? FSR2_SHADER_PERMUTATION_DEPTH_INVERTED : 0;
     flags |= (pass == FFX_FSR2_PASS_ACCUMULATE_SHARPEN) ? FSR2_SHADER_PERMUTATION_ENABLE_SHARPENING : 0;
-    flags |= (useLut) ? FSR2_SHADER_PERMUTATION_LANCZOS_LUT : 0;
+    flags |= (useLut) ? FSR2_SHADER_PERMUTATION_USE_LANCZOS_TYPE : 0;
     flags |= (canForceWave64) ? FSR2_SHADER_PERMUTATION_FORCE_WAVE64 : 0;
-    flags |= (supportedFP16) ? FSR2_SHADER_PERMUTATION_ALLOW_FP16 : 0;
+    flags |= (supportedFP16 && (pass != FFX_FSR2_PASS_RCAS)) ? FSR2_SHADER_PERMUTATION_ALLOW_FP16 : 0;
 
-    Fsr2ShaderBlobDX12 shaderBlob = { };
-    fsr2GetPermutationBlobByIndex(pass, flags, &shaderBlob);
+    const Fsr2ShaderBlobDX12 shaderBlob = fsr2GetPermutationBlobByIndex(pass, flags);
     FFX_ASSERT(shaderBlob.data && shaderBlob.size);
 
     // set up root signature
@@ -1168,20 +1167,21 @@ FfxErrorCode CreatePipelineDX12(
     outPipeline->srvCount = shaderBlob.srvCount;
     outPipeline->uavCount = shaderBlob.uavCount;
     outPipeline->constCount = shaderBlob.cbvCount;
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
     for (uint32_t srvIndex = 0; srvIndex < outPipeline->srvCount; ++srvIndex)
     {
         outPipeline->srvResourceBindings[srvIndex].slotIndex = shaderBlob.boundSRVResources[srvIndex];
-        strcpy_s(outPipeline->srvResourceBindings[srvIndex].name, shaderBlob.boundSRVResourceNames[srvIndex]);
+        wcscpy_s(outPipeline->srvResourceBindings[srvIndex].name, converter.from_bytes(shaderBlob.boundSRVResourceNames[srvIndex]).c_str());
     }
     for (uint32_t uavIndex = 0; uavIndex < outPipeline->uavCount; ++uavIndex)
     {
         outPipeline->uavResourceBindings[uavIndex].slotIndex = shaderBlob.boundUAVResources[uavIndex];
-        strcpy_s(outPipeline->uavResourceBindings[uavIndex].name, shaderBlob.boundUAVResourceNames[uavIndex]);
+        wcscpy_s(outPipeline->uavResourceBindings[uavIndex].name, converter.from_bytes(shaderBlob.boundUAVResourceNames[uavIndex]).c_str());
     }
     for (uint32_t cbIndex = 0; cbIndex < outPipeline->constCount; ++cbIndex)
     {
         outPipeline->cbResourceBindings[cbIndex].slotIndex = shaderBlob.boundCBVResources[cbIndex];
-        strcpy_s(outPipeline->cbResourceBindings[cbIndex].name, shaderBlob.boundCBVResourceNames[cbIndex]);
+        wcscpy_s(outPipeline->cbResourceBindings[cbIndex].name, converter.from_bytes(shaderBlob.boundCBVResourceNames[cbIndex]).c_str());
     }
 
     // create the PSO
@@ -1200,9 +1200,9 @@ FfxErrorCode CreatePipelineDX12(
     return FFX_OK;
 }
 
-FfxErrorCode ScheduleRenderJobDX12(
+FfxErrorCode ScheduleGpuJobDX12(
     FfxFsr2Interface* backendInterface,
-    const FfxRenderJobDescription* job
+    const FfxGpuJobDescription* job
 )
 {
     FFX_ASSERT(NULL != backendInterface);
@@ -1210,14 +1210,14 @@ FfxErrorCode ScheduleRenderJobDX12(
 
     BackendContext_DX12* backendContext = (BackendContext_DX12*)backendInterface->scratchBuffer;
 
-    FFX_ASSERT(backendContext->renderJobCount < FSR2_MAX_RENDERJOBS);
+    FFX_ASSERT(backendContext->gpuJobCount < FSR2_MAX_GPU_JOBS);
  
-    backendContext->renderJobs[backendContext->renderJobCount] = *job;
+    backendContext->gpuJobs[backendContext->gpuJobCount] = *job;
 
-    if (job->jobType == FFX_RENDER_JOB_COMPUTE) {
+    if (job->jobType == FFX_GPU_JOB_COMPUTE) {
 
         // needs to copy SRVs and UAVs in case they are on the stack only
-        FfxComputeJobDescription* computeJob = &backendContext->renderJobs[backendContext->renderJobCount].computeJobDescriptor;
+        FfxComputeJobDescription* computeJob = &backendContext->gpuJobs[backendContext->gpuJobCount].computeJobDescriptor;
         const uint32_t numConstBuffers = job->computeJobDescriptor.pipeline.constCount;
         for (uint32_t currentRootConstantIndex = 0; currentRootConstantIndex< numConstBuffers; ++currentRootConstantIndex)
         {
@@ -1226,7 +1226,7 @@ FfxErrorCode ScheduleRenderJobDX12(
         }
     }
 
-    backendContext->renderJobCount++;
+    backendContext->gpuJobCount++;
 
     return FFX_OK;
 }
@@ -1272,7 +1272,7 @@ void flushBarriers(BackendContext_DX12* backendContext, ID3D12GraphicsCommandLis
     }
 }
 
-static FfxErrorCode executeRenderJobCompute(BackendContext_DX12* backendContext, FfxRenderJobDescription* job, ID3D12Device* dx12Device, ID3D12GraphicsCommandList* dx12CommandList)
+static FfxErrorCode executeGpuJobCompute(BackendContext_DX12* backendContext, FfxGpuJobDescription* job, ID3D12Device* dx12Device, ID3D12GraphicsCommandList* dx12CommandList)
 {
     ID3D12DescriptorHeap* dx12DescriptorHeap = reinterpret_cast<ID3D12DescriptorHeap*>(backendContext->descRingBuffer);
 
@@ -1390,7 +1390,7 @@ static FfxErrorCode executeRenderJobCompute(BackendContext_DX12* backendContext,
     return FFX_OK;
 }
 
-static FfxErrorCode executeRenderJobCopy(BackendContext_DX12* backendContext, FfxRenderJobDescription* job, ID3D12Device* dx12Device, ID3D12GraphicsCommandList* dx12CommandList)
+static FfxErrorCode executeGpuJobCopy(BackendContext_DX12* backendContext, FfxGpuJobDescription* job, ID3D12Device* dx12Device, ID3D12GraphicsCommandList* dx12CommandList)
 {
     ID3D12Resource* dx12ResourceSrc = getDX12ResourcePtr(backendContext, job->copyJobDescriptor.src.internalIndex);
     ID3D12Resource* dx12ResourceDst = getDX12ResourcePtr(backendContext, job->copyJobDescriptor.dst.internalIndex);
@@ -1420,7 +1420,7 @@ static FfxErrorCode executeRenderJobCopy(BackendContext_DX12* backendContext, Ff
     return FFX_OK;
 }
 
-static FfxErrorCode executeRenderJobClearFloat(BackendContext_DX12* backendContext, FfxRenderJobDescription* job, ID3D12Device* dx12Device, ID3D12GraphicsCommandList* dx12CommandList)
+static FfxErrorCode executeGpuJobClearFloat(BackendContext_DX12* backendContext, FfxGpuJobDescription* job, ID3D12Device* dx12Device, ID3D12GraphicsCommandList* dx12CommandList)
 {
     uint32_t idx = job->clearJobDescriptor.target.internalIndex;
     BackendContext_DX12::Resource ffxResource = backendContext->resources[idx];
@@ -1444,7 +1444,7 @@ static FfxErrorCode executeRenderJobClearFloat(BackendContext_DX12* backendConte
     return FFX_OK;
 }
 
-FfxErrorCode ExecuteRenderJobsDX12(
+FfxErrorCode ExecuteGpuJobsDX12(
     FfxFsr2Interface* backendInterface,
     FfxCommandList commandList)
 {
@@ -1454,25 +1454,25 @@ FfxErrorCode ExecuteRenderJobsDX12(
 
     FfxErrorCode errorCode = FFX_OK;
 
-    // execute all renderjobs
-    for (uint32_t currentRenderJobIndex = 0; currentRenderJobIndex < backendContext->renderJobCount; ++currentRenderJobIndex) {
+    // execute all GpuJobs
+    for (uint32_t currentGpuJobIndex = 0; currentGpuJobIndex < backendContext->gpuJobCount; ++currentGpuJobIndex) {
 
-        FfxRenderJobDescription* renderJob = &backendContext->renderJobs[currentRenderJobIndex];
+        FfxGpuJobDescription* GpuJob = &backendContext->gpuJobs[currentGpuJobIndex];
         ID3D12GraphicsCommandList* dx12CommandList = reinterpret_cast<ID3D12GraphicsCommandList*>(commandList);
         ID3D12Device* dx12Device = reinterpret_cast<ID3D12Device*>(backendContext->device);
 
-        switch (renderJob->jobType) {
+        switch (GpuJob->jobType) {
 
-            case FFX_RENDER_JOB_CLEAR_FLOAT:
-                errorCode = executeRenderJobClearFloat(backendContext, renderJob, dx12Device, dx12CommandList);
+            case FFX_GPU_JOB_CLEAR_FLOAT:
+                errorCode = executeGpuJobClearFloat(backendContext, GpuJob, dx12Device, dx12CommandList);
                 break;
 
-            case FFX_RENDER_JOB_COPY:
-                errorCode = executeRenderJobCopy(backendContext, renderJob, dx12Device, dx12CommandList);
+            case FFX_GPU_JOB_COPY:
+                errorCode = executeGpuJobCopy(backendContext, GpuJob, dx12Device, dx12CommandList);
                 break;
 
-            case FFX_RENDER_JOB_COMPUTE:
-                errorCode = executeRenderJobCompute(backendContext, renderJob, dx12Device, dx12CommandList);
+            case FFX_GPU_JOB_COMPUTE:
+                errorCode = executeGpuJobCompute(backendContext, GpuJob, dx12Device, dx12CommandList);
                 break;
 
             default:
@@ -1485,7 +1485,7 @@ FfxErrorCode ExecuteRenderJobsDX12(
         errorCode == FFX_OK,
         FFX_ERROR_BACKEND_API_ERROR);
 
-    backendContext->renderJobCount = 0;
+    backendContext->gpuJobCount = 0;
 
     return FFX_OK;
 }

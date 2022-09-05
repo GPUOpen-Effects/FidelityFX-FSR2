@@ -93,7 +93,7 @@ FFX_API FfxCommandList ffxGetCommandListDX12(ID3D12CommandList* cmdList);
 FFX_API FfxResource ffxGetResourceDX12(
     FfxFsr2Context* context,
     ID3D12Resource* resDx12,
-    wchar_t* name = nullptr,
+    const wchar_t* name = nullptr,
     FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ,
     UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING);
 

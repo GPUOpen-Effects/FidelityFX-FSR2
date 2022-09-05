@@ -28,6 +28,10 @@
 #include "UpscaleContext.h"
 #include "GPUFrameRateLimiter.h"
 
+#include "../GpuParticles/ParticleSystem.h"
+#include "../GpuParticleShaders/ShaderConstants.h"
+#include "AnimatedTexture.h"
+
 struct UIState;
 
 // We are queuing (backBufferCount + 0.5) frames, so we need to triple buffer the resources that get modified each frame
@@ -60,11 +64,28 @@ public:
 
     void OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChain);
 
-    void ResetScene();
-    void PopulateEmitters(float frameTime);
     void BuildDevUI(UIState* pState);
 
 private:
+
+    struct State
+    {
+        float                               frameTime = 0.0f;
+        int                                 numEmitters = 0;
+        IParticleSystem::EmitterParams      emitters[10] = {};
+        int                                 flags = 0;
+        IParticleSystem::ConstantData       constantData = {};
+    };
+
+    struct EmissionRate
+    {
+        float           m_ParticlesPerSecond = 0.0f;    // Number of particles to emit per second
+        float           m_Accumulation = 0.0f;          // Running total of how many particles to emit over elapsed time
+    };
+
+    void ResetScene();
+    void PopulateEmitters(bool playAnimations, int activeScene, float frameTime);
+
     Device                         *m_pDevice;
 
     uint32_t                        m_Width;
@@ -98,6 +119,13 @@ private:
     ToneMappingCS                   m_ToneMappingCS;
     ColorConversionPS               m_ColorConversionPS;
     MagnifierPS                     m_MagnifierPS;
+
+    // GPU Particle System
+    State                           m_state = {};
+    IParticleSystem*                m_pGPUParticleSystem = nullptr;
+    EmissionRate                    m_EmissionRates[NUM_EMITTERS] = {};
+
+    AnimatedTextures                m_AnimatedTextures = {};
 
     // TAA
     CBV_SRV_UAV                     m_UpscaleSRVs;

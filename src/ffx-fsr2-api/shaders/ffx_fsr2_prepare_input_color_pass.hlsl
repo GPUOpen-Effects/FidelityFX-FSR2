@@ -22,7 +22,7 @@
 // FSR2 pass 1
 // SRV  1 : m_HDR                               : r_input_color_jittered
 // SRV  4 : FSR2_Exposure                       : r_exposure
-// UAV  7 : FSR2_ReconstructedPrevNearestDepth  : rw_ReconstructedPrevNearestDepth
+// UAV  7 : FSR2_ReconstructedPrevNearestDepth  : rw_reconstructed_previous_nearest_depth
 // UAV 13 : FSR2_PreparedInputColor             : rw_prepared_input_color
 // UAV 14 : FSR2_LumaHistory                    : rw_luma_history
 // CB   0 : cbFSR2

@@ -124,12 +124,17 @@ void Renderer::OnCreate(Device* pDevice, SwapChain *pSwapChain, float FontSize, 
     // TAA
     m_ResourceViewHeaps.AllocCBV_SRV_UAVDescriptor(3, &m_UpscaleSRVs);
 
+    m_pGPUParticleSystem = IParticleSystem::CreateGPUSystem("..\\media\\atlas.dds");
+    m_pGPUParticleSystem->OnCreateDevice(*pDevice, m_UploadHeap, m_ResourceViewHeaps, m_VidMemBufferPool, m_ConstantBufferRing);
+
     m_GpuFrameRateLimiter.OnCreate(pDevice, &m_ResourceViewHeaps);
 
     // needs to be completely reinitialized, as the format potentially changes
     bool hdr = (pSwapChain->GetDisplayMode() != DISPLAYMODE_SDR);
     DXGI_FORMAT mFormat = (hdr ? m_pGBufferHDRTexture->GetFormat() : DXGI_FORMAT_R8G8B8A8_UNORM);
     m_MagnifierPS.OnCreate(m_pDevice, &m_ResourceViewHeaps, &m_ConstantBufferRing, &m_VidMemBufferPool, mFormat);
+
+    m_AnimatedTextures.OnCreate( *pDevice, m_UploadHeap, m_VidMemBufferPool, m_ResourceViewHeaps, m_ConstantBufferRing );
 
     ResetScene();
 }
@@ -141,7 +146,12 @@ void Renderer::OnCreate(Device* pDevice, SwapChain *pSwapChain, float FontSize, 
 //--------------------------------------------------------------------------------------
 void Renderer::OnDestroy()
 {
+    m_AnimatedTextures.OnDestroy();
     m_GpuFrameRateLimiter.OnDestroy();
+
+    m_pGPUParticleSystem->OnDestroyDevice();
+    delete m_pGPUParticleSystem;
+    m_pGPUParticleSystem = nullptr;
 
     m_AsyncPool.Flush();
 
@@ -244,6 +254,8 @@ void Renderer::OnCreateWindowSizeDependentResources(SwapChain *pSwapChain, UISta
     
     m_MagnifierPS.OnCreateWindowSizeDependentResources(&m_displayOutput);
 
+    m_pGPUParticleSystem->OnResizedSwapChain(pState->renderWidth, pState->renderHeight, m_GBuffer.m_DepthBuffer);
+
     // Lazy Upscale context generation: 
     if ((m_pUpscaleContext == NULL) || (pState->m_nUpscaleType != m_pUpscaleContext->Type()))
     {
@@ -276,6 +288,8 @@ void Renderer::OnCreateWindowSizeDependentResources(SwapChain *pSwapChain, UISta
 //--------------------------------------------------------------------------------------
 void Renderer::OnDestroyWindowSizeDependentResources()
 {
+    m_pGPUParticleSystem->OnReleasingSwapChain();
+
     m_displayOutput.OnDestroy();
     m_renderOutput.OnDestroy();
     m_OpaqueTexture.OnDestroy();
@@ -502,7 +516,7 @@ void Renderer::AllocateShadowMaps(GLTFCommon* pGLTFCommon)
         std::vector<SceneShadowInfo>::iterator CurrentShadow = m_shadowMapPool.begin();
         for( uint32_t i = 0; CurrentShadow < m_shadowMapPool.end(); ++i, ++CurrentShadow)
         {
-            CurrentShadow->ShadowMap.InitDepthStencil(m_pDevice, "m_pShadowMap", &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, CurrentShadow->ShadowResolution, CurrentShadow->ShadowResolution, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL), 0.0f);
+            CurrentShadow->ShadowMap.InitDepthStencil(m_pDevice, "m_pShadowMap", &CD3DX12_RESOURCE_DESC::Tex2D(DXGI_FORMAT_D32_FLOAT, CurrentShadow->ShadowResolution, CurrentShadow->ShadowResolution, 1, 1, 1, 0, D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL), 1.0f);
             CurrentShadow->ShadowMap.CreateDSV(CurrentShadow->ShadowIndex, &m_ShadowMapPoolDSV);
             CurrentShadow->ShadowMap.CreateSRV(CurrentShadow->ShadowIndex, &m_ShadowMapPoolSRV);
         }
@@ -545,6 +559,7 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
     m_pUpscaleContext->PreDraw(pState);
 
     static float fLightModHelper = 2.f;
+    float fLightMod = 1.f;
 
     // Sets the perFrame data 
     per_frame *pPerFrame = NULL;
@@ -566,6 +581,27 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
         pPerFrame->lodBias = pState->mipBias;
         m_pGLTFTexturesAndBuffers->SetPerFrameConstants();
         m_pGLTFTexturesAndBuffers->SetSkinningMatricesForSkeletons();
+    }
+
+    {
+        m_state.flags = IParticleSystem::PF_Streaks | IParticleSystem::PF_DepthCull | IParticleSystem::PF_Sort;
+        m_state.flags |= pState->nReactiveMaskMode == REACTIVE_MASK_MODE_ON ? IParticleSystem::PF_Reactive : 0;
+
+        const Camera& camera = pState->camera;
+        m_state.constantData.m_ViewProjection = camera.GetProjection() * camera.GetView();
+        m_state.constantData.m_View = camera.GetView();
+        m_state.constantData.m_ViewInv = math::inverse(camera.GetView());
+        m_state.constantData.m_Projection = camera.GetProjection();
+        m_state.constantData.m_ProjectionInv = math::inverse(camera.GetProjection());
+        m_state.constantData.m_SunDirection = math::Vector4(0.7f, 0.7f, 0, 0);
+        m_state.constantData.m_SunColor = math::Vector4(0.8f, 0.8f, 0.7f, 0);
+        m_state.constantData.m_AmbientColor = math::Vector4(0.2f, 0.2f, 0.3f, 0);
+
+        m_state.constantData.m_SunColor *= fLightMod;
+        m_state.constantData.m_AmbientColor *= fLightMod;
+
+        m_state.constantData.m_FrameTime = pState->m_bPlayAnimations ? (0.001f * (float)pState->deltaTime) : 0.0f;
+        PopulateEmitters(pState->m_bPlayAnimations, pState->m_activeScene, 0.001f * (float)pState->deltaTime);
     }
 
     // command buffer calls
@@ -664,6 +700,12 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
 #else
                 pGltfPbr->DrawBatchList(pCmdLst1, &m_ShadowMapPoolSRV, &opaque, bWireframe);
 #endif
+
+                if (pState->bRenderAnimatedTextures)
+                {
+                    m_AnimatedTextures.Render(pCmdLst1, pState->m_bPlayAnimations ? (0.001f * (float)pState->deltaTime) : 0.0f, pState->m_fTextureAnimationSpeed, pState->bCompositionMask, Cam);
+                }
+
                 m_GPUTimer.GetTimeStamp(pCmdLst1, "PBR Opaque");
                 pRenderPassFullGBuffer->EndPass();
             }
@@ -711,6 +753,13 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
             {
                 pRenderPassFullGBuffer->BeginPass(pCmdLst1, false);
 
+                if (pState->bRenderParticleSystem)
+                {
+                    pCmdLst1->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_GBuffer.m_DepthBuffer.GetResource(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE));
+                    m_pGPUParticleSystem->Render(pCmdLst1, m_ConstantBufferRing, m_state.flags, m_state.emitters, m_state.numEmitters, m_state.constantData);
+                    pCmdLst1->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_GBuffer.m_DepthBuffer.GetResource(), D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE));
+                }
+
                 std::sort(transparent.begin(), transparent.end());
                 pGltfPbr->DrawBatchList(pCmdLst1, &m_ShadowMapPoolSRV, &transparent, bWireframe);
                 m_GPUTimer.GetTimeStamp(pCmdLst1, "PBR Transparent");
@@ -756,6 +805,24 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
         CD3DX12_RESOURCE_BARRIER::Transition(pGBuffer->m_HDR.GetResource(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE),
     };
     pCmdLst1->ResourceBarrier(1, preResolve);
+
+    // if FSR2 and auto reactive mask is enabled: generate reactive mask
+    if (pState->nReactiveMaskMode == REACTIVE_MASK_MODE_AUTOGEN)
+    {
+        UpscaleContext::FfxUpscaleSetup upscaleSetup;
+        upscaleSetup.cameraSetup.vCameraPos = pState->camera.GetPosition();
+        upscaleSetup.cameraSetup.mCameraView = pState->camera.GetView();
+        upscaleSetup.cameraSetup.mCameraViewInv = math::inverse(pState->camera.GetView());
+        upscaleSetup.cameraSetup.mCameraProj = pState->camera.GetProjection();
+        upscaleSetup.opaqueOnlyColorResource = m_OpaqueTexture.GetResource();
+        upscaleSetup.unresolvedColorResource = m_GBuffer.m_HDR.GetResource();
+        upscaleSetup.motionvectorResource = m_GBuffer.m_MotionVectors.GetResource();
+        upscaleSetup.depthbufferResource = m_GBuffer.m_DepthBuffer.GetResource();
+        upscaleSetup.reactiveMapResource = m_GBuffer.m_UpscaleReactive.GetResource();
+        upscaleSetup.transparencyAndCompositionResource = m_GBuffer.m_UpscaleTransparencyAndComposition.GetResource();
+        upscaleSetup.resolvedColorResource = m_displayOutput.GetResource();
+        m_pUpscaleContext->GenerateReactiveMask(pCmdLst1, upscaleSetup, pState);
+    }
 
     // Post proc---------------------------------------------------------------------------
 
@@ -979,12 +1046,101 @@ void Renderer::OnRender(UIState* pState, const Camera& Cam, SwapChain* pSwapChai
 
 void Renderer::ResetScene()
 {
+    ZeroMemory(m_EmissionRates, sizeof(m_EmissionRates));
 
+    // Reset the particle system when the scene changes so no particles from the previous scene persist
+    m_pGPUParticleSystem->Reset();
 }
 
-void Renderer::PopulateEmitters(float frameTime)
+void Renderer::PopulateEmitters(bool playAnimations, int activeScene, float frameTime)
 {
-    bool m_Paused = false;
+    IParticleSystem::EmitterParams sparksEmitter = {};
+    IParticleSystem::EmitterParams smokeEmitter = {};
+
+    sparksEmitter.m_NumToEmit = 0;
+    sparksEmitter.m_ParticleLifeSpan = 1.0f;
+    sparksEmitter.m_StartSize  = 0.6f * 0.02f;
+    sparksEmitter.m_EndSize    = 0.4f * 0.02f;
+    sparksEmitter.m_VelocityVariance = 1.5f;
+    sparksEmitter.m_Mass = 1.0f;
+    sparksEmitter.m_TextureIndex = 1;
+    sparksEmitter.m_Streaks = true;
+
+    smokeEmitter.m_NumToEmit = 0;
+    smokeEmitter.m_ParticleLifeSpan = 50.0f;
+    smokeEmitter.m_StartSize  = 0.4f;
+    smokeEmitter.m_EndSize    = 1.0f;
+    smokeEmitter.m_VelocityVariance = 1.0f;
+    smokeEmitter.m_Mass = 0.0003f;
+    smokeEmitter.m_TextureIndex = 0;
+    smokeEmitter.m_Streaks = false;
+
+    if ( activeScene == 0 ) // scene 0 = warehouse
+    {
+        m_state.numEmitters = 2;
+        m_state.emitters[0] = sparksEmitter;
+        m_state.emitters[1] = sparksEmitter;
+
+        m_state.emitters[0].m_Position = math::Vector4(-4.15f, -1.85f, -3.8f, 1.0f);
+        m_state.emitters[0].m_PositionVariance = math::Vector4(0.1f, 0.0f, 0.0f, 1.0f);
+        m_state.emitters[0].m_Velocity = math::Vector4(0.0f,  0.08f, 0.8f, 1.0f);
+        m_EmissionRates[0].m_ParticlesPerSecond = 300.0f;
+
+        m_state.emitters[1].m_Position = math::Vector4(-4.9f, -1.5f, -4.8f, 1.0f);
+        m_state.emitters[1].m_PositionVariance = math::Vector4(0.0f, 0.0f, 0.0f, 1.0f);
+        m_state.emitters[1].m_Velocity = math::Vector4(0.0f, 0.8f, -0.8f, 1.0f);
+        m_EmissionRates[1].m_ParticlesPerSecond = 400.0f;
+
+        m_state.constantData.m_StartColor[0] = math::Vector4(10.0f, 10.0f, 2.0f, 0.9f);
+        m_state.constantData.m_EndColor[0] = math::Vector4(10.0f, 10.0f, 0.0f, 0.1f);
+        m_state.constantData.m_StartColor[1] = math::Vector4(10.0f, 10.0f, 2.0f, 0.9f);
+        m_state.constantData.m_EndColor[1] = math::Vector4(10.0f, 10.0f, 0.0f, 0.1f);
+    }
+    else if ( activeScene == 1 ) // Sponza
+    {
+        m_state.numEmitters = 2;
+        m_state.emitters[0] = smokeEmitter;
+        m_state.emitters[1] = sparksEmitter;
+
+        m_state.emitters[0].m_Position = math::Vector4(-13.0f, 0.0f, 1.4f, 1.0f);
+        m_state.emitters[0].m_PositionVariance = math::Vector4(0.1f, 0.0f, 0.1f, 1.0f);
+        m_state.emitters[0].m_Velocity = math::Vector4(0.0f, 0.2f, 0.0f, 1.0f);
+        m_EmissionRates[0].m_ParticlesPerSecond = 10.0f;
+
+        m_state.emitters[1].m_Position = math::Vector4(-13.0f, 0.0f, -1.4f, 1.0f);
+        m_state.emitters[1].m_PositionVariance = math::Vector4(0.05f, 0.0f, 0.05f, 1.0f);
+        m_state.emitters[1].m_Velocity = math::Vector4(0.0f, 4.0f, 0.0f, 1.0f);
+        m_state.emitters[1].m_VelocityVariance = 0.5f;
+        m_state.emitters[1].m_StartSize = 0.02f;
+        m_state.emitters[1].m_EndSize = 0.02f;
+        m_state.emitters[1].m_Mass = 1.0f;
+        m_EmissionRates[1].m_ParticlesPerSecond = 500.0f;
+
+        m_state.constantData.m_StartColor[0] = math::Vector4(0.3f, 0.3f, 0.3f, 0.4f);
+        m_state.constantData.m_EndColor[0] = math::Vector4(0.4f, 0.4f, 0.4f, 0.1f);
+        m_state.constantData.m_StartColor[1] = math::Vector4(10.0f, 10.0f, 10.0f, 0.9f);
+        m_state.constantData.m_EndColor[1] = math::Vector4(5.0f, 8.0f, 5.0f, 0.1f);
+    }
+
+    // Update all our active emitters so we know how many whole numbers of particles to emit from each emitter this frame
+    for (int i = 0; i < m_state.numEmitters; i++)
+    {
+        m_state.constantData.m_EmitterLightingCenter[i] = m_state.emitters[ i ].m_Position;
+
+        if (m_EmissionRates[i].m_ParticlesPerSecond > 0.0f)
+        {
+            m_EmissionRates[i].m_Accumulation += m_EmissionRates[i].m_ParticlesPerSecond * (playAnimations ? frameTime : 0.0f);
+
+            if (m_EmissionRates[i].m_Accumulation > 1.0f)
+            {
+                float integerPart = 0.0f;
+                float fraction = modf(m_EmissionRates[i].m_Accumulation, &integerPart);
+
+                m_state.emitters[i].m_NumToEmit = (int)integerPart;
+                m_EmissionRates[i].m_Accumulation = fraction;
+            }
+        }
+    }
 }
 
 

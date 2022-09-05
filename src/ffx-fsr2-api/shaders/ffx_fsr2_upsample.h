@@ -22,54 +22,100 @@
 #ifndef FFX_FSR2_UPSAMPLE_H
 #define FFX_FSR2_UPSAMPLE_H
 
-FfxFloat32 SmoothStep(FfxFloat32 x, FfxFloat32 a, FfxFloat32 b)
-{
-    x = clamp((x - a) / (b - a), 0.f, 1.f);
-    return x * x * (3.f - 2.f * x);
-}
+#define FFX_FSR2_OPTION_GUARANTEE_POSITIVE_UPSAMPLE_WEIGHT 0
 
 FFX_STATIC const FfxUInt32 iLanczos2SampleCount = 16;
 
-void DeringingWithMinMax(UPSAMPLE_F3 fDeringingMin, UPSAMPLE_F3 fDeringingMax, FFX_PARAMETER_INOUT UPSAMPLE_F3 fColor, FFX_PARAMETER_OUT FfxFloat32 fRangeSimilarity)
-{
-    fRangeSimilarity = fDeringingMin.x / fDeringingMax.x;
-    fColor = clamp(fColor, fDeringingMin, fDeringingMax);
-}
-
-void Deringing(RectificationBoxData clippingBox, FFX_PARAMETER_INOUT UPSAMPLE_F3 fColor)
+void Deringing(RectificationBoxData clippingBox, FFX_PARAMETER_INOUT FfxFloat32x3 fColor)
 {
     fColor = clamp(fColor, clippingBox.aabbMin, clippingBox.aabbMax);
 }
-
-UPSAMPLE_F GetUpsampleLanczosWeight(UPSAMPLE_F2 fSrcSampleOffset, UPSAMPLE_F2 fKernelWeight)
+#if FFX_HALF
+void Deringing(RectificationBoxDataMin16 clippingBox, FFX_PARAMETER_INOUT FFX_MIN16_F3 fColor)
 {
-    UPSAMPLE_F2 fSrcSampleOffsetBiased = UPSAMPLE_F2(fSrcSampleOffset * fKernelWeight);
-    UPSAMPLE_F fSampleWeight = Lanczos2ApproxSq(dot(fSrcSampleOffsetBiased, fSrcSampleOffsetBiased));		// TODO: check other distances (l0, l1, linf...)
+    fColor = clamp(fColor, clippingBox.aabbMin, clippingBox.aabbMax);
+}
+#endif
 
+#ifndef FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE
+#define FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE 1 // Approximate
+#endif
+
+FfxFloat32 GetUpsampleLanczosWeight(FfxFloat32x2 fSrcSampleOffset, FfxFloat32x2 fKernelWeight)
+{
+    FfxFloat32x2 fSrcSampleOffsetBiased = fSrcSampleOffset * fKernelWeight;
+#if FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 0 // LANCZOS_TYPE_REFERENCE
+    FfxFloat32 fSampleWeight = Lanczos2(length(fSrcSampleOffsetBiased));
+#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 1 // LANCZOS_TYPE_LUT
+    FfxFloat32 fSampleWeight = Lanczos2_UseLUT(length(fSrcSampleOffsetBiased));
+#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 2 // LANCZOS_TYPE_APPROXIMATE
+    FfxFloat32 fSampleWeight = Lanczos2ApproxSq(dot(fSrcSampleOffsetBiased, fSrcSampleOffsetBiased));
+#else
+#error "Invalid Lanczos type"
+#endif
     return fSampleWeight;
 }
 
-UPSAMPLE_F Pow3(UPSAMPLE_F x)
+#if FFX_HALF
+FFX_MIN16_F GetUpsampleLanczosWeight(FFX_MIN16_F2 fSrcSampleOffset, FFX_MIN16_F2 fKernelWeight)
+{
+    FFX_MIN16_F2 fSrcSampleOffsetBiased = fSrcSampleOffset * fKernelWeight;
+#if FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 0 // LANCZOS_TYPE_REFERENCE
+    FFX_MIN16_F fSampleWeight = Lanczos2(length(fSrcSampleOffsetBiased));
+#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 1 // LANCZOS_TYPE_APPROXIMATE
+    FFX_MIN16_F fSampleWeight = Lanczos2ApproxSq(dot(fSrcSampleOffsetBiased, fSrcSampleOffsetBiased));
+#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 2 // LANCZOS_TYPE_LUT
+    FFX_MIN16_F fSampleWeight = Lanczos2_UseLUT(length(fSrcSampleOffsetBiased));
+    // To Test: Save reciproqual sqrt compute
+    // FfxFloat32 fSampleWeight = Lanczos2Sq_UseLUT(dot(fSrcSampleOffsetBiased, fSrcSampleOffsetBiased));
+#else
+#error "Invalid Lanczos type"
+#endif
+    return fSampleWeight;
+}
+#endif
+
+FfxFloat32 Pow3(FfxFloat32 x)
 {
     return x * x * x;
 }
 
-UPSAMPLE_F4 ComputeUpsampledColorAndWeight(FFX_MIN16_I2 iPxHrPos, UPSAMPLE_F2 fKernelWeight, FFX_PARAMETER_INOUT RectificationBoxData clippingBox)
+#if FX_HALF
+FFX_MIN16_F Pow3(FFX_MIN16_F x)
 {
+    return x * x * x;
+}
+#endif
+
+FfxFloat32x4 ComputeUpsampledColorAndWeight(FfxInt32x2 iPxHrPos, FfxFloat32x2 fKernelWeight, FFX_PARAMETER_INOUT RectificationBoxData clippingBox)
+{
+#if FFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF && FFX_HALF
+#include "ffx_fsr2_force16_begin.h"
+#endif
     // We compute a sliced lanczos filter with 2 lobes (other slices are accumulated temporaly)
     FfxFloat32x2 fDstOutputPos = FfxFloat32x2(iPxHrPos) + FFX_BROADCAST_FLOAT32X2(0.5f);      // Destination resolution output pixel center position
     FfxFloat32x2 fSrcOutputPos = fDstOutputPos * DownscaleFactor();                   // Source resolution output pixel center position
     FfxInt32x2 iSrcInputPos = FfxInt32x2(floor(fSrcOutputPos));                     // TODO: what about weird upscale factors...
 
-    UPSAMPLE_F3 fSamples[iLanczos2SampleCount];
+#if FFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF && FFX_HALF
+#include "ffx_fsr2_force16_end.h"
+#endif
 
-    FfxFloat32x2 fSrcUnjitteredPos = (FfxFloat32x2(iSrcInputPos) + FFX_BROADCAST_FLOAT32X2(0.5f)) - Jitter();                // This is the un-jittered position of the sample at offset 0,0
-    
-    UPSAMPLE_I2 offsetTL;
-    offsetTL.x = (fSrcUnjitteredPos.x > fSrcOutputPos.x) ? UPSAMPLE_I(-2) : UPSAMPLE_I(-1);
-    offsetTL.y = (fSrcUnjitteredPos.y > fSrcOutputPos.y) ? UPSAMPLE_I(-2) : UPSAMPLE_I(-1);
-
+#if FFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF && FFX_HALF
+#include "ffx_fsr2_force16_begin.h"
+    RectificationBoxMin16 fRectificationBox;
+#else
     RectificationBox fRectificationBox;
+#endif
+
+    FfxFloat32x3 fSamples[iLanczos2SampleCount];
+
+
+    FfxFloat32x2 fSrcUnjitteredPos = (FfxFloat32x2(iSrcInputPos) + FfxFloat32x2(0.5f, 0.5f)) - Jitter(); // This is the un-jittered position of the sample at offset 0,0
+    
+    FfxInt32x2 offsetTL;
+    offsetTL.x = (fSrcUnjitteredPos.x > fSrcOutputPos.x) ? FfxInt32(-2) : FfxInt32(-1);
+    offsetTL.y = (fSrcUnjitteredPos.y > fSrcOutputPos.y) ? FfxInt32(-2) : FfxInt32(-1);
 
     //Load samples
     // If fSrcUnjitteredPos.y > fSrcOutputPos.y, indicates offsetTL.y = -2, sample offset Y will be [-2, 1], clipbox will be rows [1, 3].
@@ -78,7 +124,7 @@ UPSAMPLE_F4 ComputeUpsampledColorAndWeight(FFX_MIN16_I2 iPxHrPos, UPSAMPLE_F2 fK
     const FfxBoolean bFlipRow = fSrcUnjitteredPos.y > fSrcOutputPos.y;
     const FfxBoolean bFlipCol = fSrcUnjitteredPos.x > fSrcOutputPos.x;
 
-    UPSAMPLE_F2 fOffsetTL = UPSAMPLE_F2(offsetTL);
+    FfxFloat32x2 fOffsetTL = FfxFloat32x2(offsetTL);
 
     FFX_UNROLL
     for (FfxInt32 row = 0; row < 4; row++) {
@@ -92,57 +138,77 @@ UPSAMPLE_F4 ComputeUpsampledColorAndWeight(FFX_MIN16_I2 iPxHrPos, UPSAMPLE_F2 fK
 
             const FfxInt32x2 sampleCoord = ClampLoad(iSrcSamplePos, FfxInt32x2(0, 0), FfxInt32x2(RenderSize()));
 
-            fSamples[iSampleIndex] = LoadPreparedInputColor(FFX_MIN16_I2(sampleCoord));
+            fSamples[iSampleIndex] = LoadPreparedInputColor(FfxInt32x2(sampleCoord));
         }
     }
 
     RectificationBoxReset(fRectificationBox, fSamples[0]);
 
-    UPSAMPLE_F3 fColor = UPSAMPLE_F3(0.f, 0.f, 0.f);
-    UPSAMPLE_F fWeight = UPSAMPLE_F(0.f);
-    UPSAMPLE_F2 fBaseSampleOffset = UPSAMPLE_F2(fSrcUnjitteredPos - fSrcOutputPos);
+    FfxFloat32x3 fColor = FfxFloat32x3(0.f, 0.f, 0.f);
+    FfxFloat32 fWeight = FfxFloat32(0.f);
+    FfxFloat32x2 fBaseSampleOffset = FfxFloat32x2(fSrcUnjitteredPos - fSrcOutputPos);
 
     FFX_UNROLL
-    for (FfxUInt32 iSampleIndex = 0; iSampleIndex < iLanczos2SampleCount; ++iSampleIndex)
-    {
-        FfxInt32 row = FfxInt32(iSampleIndex >> 2);
-        FfxInt32 col = FfxInt32(iSampleIndex & 3);
+    for (FfxInt32 row = 0; row < 3; row++) {
 
-        const FfxInt32x2 sampleColRow = FfxInt32x2(bFlipCol ? (3 - col) : col, bFlipRow ? (3 - row) : row);
-        const UPSAMPLE_F2 fOffset = fOffsetTL + UPSAMPLE_F2(sampleColRow);
-        UPSAMPLE_F2 fSrcSampleOffset = fBaseSampleOffset + fOffset;
+        FFX_UNROLL
+        for (FfxInt32 col = 0; col < 3; col++) {
+            FfxInt32 iSampleIndex = col + (row << 2);
 
-        FfxInt32x2 iSrcSamplePos = FfxInt32x2(iSrcInputPos) + FfxInt32x2(offsetTL) + sampleColRow;
+            const FfxInt32x2 sampleColRow = FfxInt32x2(bFlipCol ? (3 - col) : col, bFlipRow ? (3 - row) : row);
+            const FfxFloat32x2 fOffset = fOffsetTL + FfxFloat32x2(sampleColRow);
+            FfxFloat32x2 fSrcSampleOffset = fBaseSampleOffset + fOffset;
 
-        UPSAMPLE_F fSampleWeight = UPSAMPLE_F(IsOnScreen(FFX_MIN16_I2(iSrcSamplePos), FFX_MIN16_I2(RenderSize()))) * GetUpsampleLanczosWeight(fSrcSampleOffset, fKernelWeight);
+            FfxInt32x2 iSrcSamplePos = FfxInt32x2(iSrcInputPos) + FfxInt32x2(offsetTL) + sampleColRow;
 
-        // Update rectification box
-        if(all(FFX_LESS_THAN(FfxInt32x2(col, row), FFX_BROADCAST_INT32X2(3))))
-        {
-            //update clipping box in non-locked areas
-            const UPSAMPLE_F fSrcSampleOffsetSq = dot(fSrcSampleOffset, fSrcSampleOffset);
-            UPSAMPLE_F fBoxSampleWeight = UPSAMPLE_F(1) - ffxSaturate(fSrcSampleOffsetSq / UPSAMPLE_F(3));
+            FfxFloat32 fSampleWeight = FfxFloat32(IsOnScreen(FfxInt32x2(iSrcSamplePos), FfxInt32x2(RenderSize()))) * GetUpsampleLanczosWeight(fSrcSampleOffset, fKernelWeight);
+
+            // Update rectification box
+            const FfxFloat32 fSrcSampleOffsetSq = dot(fSrcSampleOffset, fSrcSampleOffset);
+            FfxFloat32 fBoxSampleWeight = FfxFloat32(1) - ffxSaturate(fSrcSampleOffsetSq / FfxFloat32(3));
             fBoxSampleWeight *= fBoxSampleWeight;
             RectificationBoxAddSample(fRectificationBox, fSamples[iSampleIndex], fBoxSampleWeight);
+
+            fWeight += fSampleWeight;
+            fColor += fSampleWeight * fSamples[iSampleIndex];
         }
-
-        fWeight += fSampleWeight;
-        fColor += fSampleWeight * fSamples[iSampleIndex];
     }
-
     // Normalize for deringing (we need to compare colors)
-    fColor = fColor / (abs(fWeight) > FSR2_EPSILON ? fWeight : UPSAMPLE_F(1.f));
+    fColor = fColor / (abs(fWeight) > FSR2_EPSILON ? fWeight : FfxFloat32(1.f));
 
     RectificationBoxComputeVarianceBoxData(fRectificationBox);
-    clippingBox = RectificationBoxGetData(fRectificationBox);
+#if FFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF && FFX_HALF
+    RectificationBoxDataMin16 rectificationData = RectificationBoxGetData(fRectificationBox);
+    clippingBox.aabbMax = rectificationData.aabbMax;
+    clippingBox.aabbMin = rectificationData.aabbMin;
+    clippingBox.boxCenter = rectificationData.boxCenter;
+    clippingBox.boxVec = rectificationData.boxVec;
+#else
+    RectificationBoxData rectificationData = RectificationBoxGetData(fRectificationBox);
+    clippingBox = rectificationData;
+#endif
 
-    Deringing(RectificationBoxGetData(fRectificationBox), fColor);
+    Deringing(rectificationData, fColor);
 
-    if (any(FFX_LESS_THAN(fKernelWeight, UPSAMPLE_F2_BROADCAST(1.0f)))) {
-        fWeight = UPSAMPLE_F(averageLanczosWeightPerFrame);
+#if FFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF && FFX_HALF
+    clippingBox.aabbMax = rectificationData.aabbMax;
+    clippingBox.aabbMin = rectificationData.aabbMin;
+    clippingBox.boxCenter = rectificationData.boxCenter;
+    clippingBox.boxVec = rectificationData.boxVec;
+#endif
+
+    if (any(FFX_LESS_THAN(fKernelWeight, FfxFloat32x2(1, 1)))) {
+        fWeight = FfxFloat32(averageLanczosWeightPerFrame);
     }
+#if FFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF && FFX_HALF
+#include "ffx_fsr2_force16_end.h"
+#endif
 
-    return UPSAMPLE_F4(fColor, ffxMax(UPSAMPLE_F(0), fWeight));
+#if FFX_FSR2_OPTION_GUARANTEE_POSITIVE_UPSAMPLE_WEIGHT
+    return FfxFloat32x4(fColor, ffxMax(FfxFloat32(FSR2_EPSILON), fWeight));
+#else
+    return FfxFloat32x4(fColor, ffxMax(FfxFloat32(0), fWeight));
+#endif
 }
 
 #endif //!defined( FFX_FSR2_UPSAMPLE_H )

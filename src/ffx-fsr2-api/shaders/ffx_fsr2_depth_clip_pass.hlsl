@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 
 // FSR2 pass 3
-// SRV  7 : FSR2_ReconstructedPrevNearestDepth  : r_ReconstructedPrevNearestDepth
+// SRV  7 : FSR2_ReconstructedPrevNearestDepth  : r_reconstructed_previous_nearest_depth
 // SRV  8 : FSR2_DilatedVelocity                : r_dilated_motion_vectors
 // SRV  9 : FSR2_DilatedDepth                   : r_dilatedDepth
 // UAV 12 : FSR2_DepthClip                      : rw_depth_clip
@@ -54,9 +54,9 @@ FFX_FSR2_PREFER_WAVE64
 FFX_FSR2_NUM_THREADS
 FFX_FSR2_EMBED_ROOTSIG_CONTENT
 void CS(
-    min16int2 iGroupId : SV_GroupID,
-    min16int2 iDispatchThreadId : SV_DispatchThreadID,
-    min16int2 iGroupThreadId : SV_GroupThreadID,
+    int2 iGroupId : SV_GroupID,
+    int2 iDispatchThreadId : SV_DispatchThreadID,
+    int2 iGroupThreadId : SV_GroupThreadID,
     int iGroupIndex : SV_GroupIndex)
 {
     DepthClip(iDispatchThreadId);

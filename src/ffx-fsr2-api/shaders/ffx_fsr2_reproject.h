@@ -22,31 +22,62 @@
 #ifndef FFX_FSR2_REPROJECT_H
 #define FFX_FSR2_REPROJECT_H
 
-FFX_MIN16_F4 WrapHistory(FfxInt32x2 iPxSample)
+#ifndef FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE
+#define FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE 1 // Approximate
+#endif
+
+FfxFloat32x4 WrapHistory(FfxInt32x2 iPxSample)
 {
     return LoadHistory(iPxSample);
 }
 
-DeclareCustomFetchBicubicSamplesMin16(FetchHistorySamples, WrapHistory)
-DeclareCustomTextureSample(HistorySample, Lanczos2, FetchHistorySamples)
-
-
-FFX_MIN16_F4 WrapLockStatus(FfxInt32x2 iPxSample)
+#if FFX_HALF
+FFX_MIN16_F4 WrapHistory(FFX_MIN16_I2 iPxSample)
 {
-    return FFX_MIN16_F4(LoadLockStatus(FFX_MIN16_I2(iPxSample)), 0);
+    return FFX_MIN16_F4(LoadHistory(iPxSample));
 }
-
-#if 1
-DeclareCustomFetchBilinearSamples(FetchLockStatusSamples, WrapLockStatus)
-DeclareCustomTextureSample(LockStatusSample, Bilinear, FetchLockStatusSamples)
-#else
-DeclareCustomFetchBicubicSamplesMin16(FetchLockStatusSamples, WrapLockStatus)
-DeclareCustomTextureSample(LockStatusSample, Lanczos2, FetchLockStatusSamples)
 #endif
 
 
+#if FFX_FSR2_OPTION_REPROJECT_SAMPLERS_USE_DATA_HALF && FFX_HALF
+DeclareCustomFetchBicubicSamplesMin16(FetchHistorySamples, WrapHistory)
+DeclareCustomTextureSampleMin16(HistorySample, FFX_FSR2_GET_LANCZOS_SAMPLER1D(FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE), FetchHistorySamples)
+#else
+DeclareCustomFetchBicubicSamples(FetchHistorySamples, WrapHistory)
+DeclareCustomTextureSample(HistorySample, FFX_FSR2_GET_LANCZOS_SAMPLER1D(FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE), FetchHistorySamples)
+#endif
 
-FfxFloat32x2 GetMotionVector(FFX_MIN16_I2 iPxHrPos, FfxFloat32x2 fHrUv)
+FfxFloat32x4 WrapLockStatus(FfxInt32x2 iPxSample)
+{
+    return FfxFloat32x4(LoadLockStatus(iPxSample), 0.0f);
+}
+
+#if FFX_HALF
+FFX_MIN16_F4 WrapLockStatus(FFX_MIN16_I2 iPxSample)
+{
+    return FFX_MIN16_F4(LoadLockStatus(iPxSample), 0.0f);
+}
+#endif
+
+#if 1
+#if FFX_FSR2_OPTION_REPROJECT_SAMPLERS_USE_DATA_HALF && FFX_HALF
+DeclareCustomFetchBilinearSamplesMin16(FetchLockStatusSamples, WrapLockStatus)
+DeclareCustomTextureSampleMin16(LockStatusSample, Bilinear, FetchLockStatusSamples)
+#else
+DeclareCustomFetchBilinearSamples(FetchLockStatusSamples, WrapLockStatus)
+DeclareCustomTextureSample(LockStatusSample, Bilinear, FetchLockStatusSamples)
+#endif
+#else
+#if FFX_FSR2_OPTION_REPROJECT_SAMPLERS_USE_DATA_HALF && FFX_HALF
+DeclareCustomFetchBicubicSamplesMin16(FetchLockStatusSamples, WrapLockStatus)
+DeclareCustomTextureSampleMin16(LockStatusSample, FFX_FSR2_GET_LANCZOS_SAMPLER1D(FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE), FetchLockStatusSamples)
+#else
+DeclareCustomFetchBicubicSamples(FetchLockStatusSamples, WrapLockStatus)
+DeclareCustomTextureSample(LockStatusSample, FFX_FSR2_GET_LANCZOS_SAMPLER1D(FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE), FetchLockStatusSamples)
+#endif
+#endif
+
+FfxFloat32x2 GetMotionVector(FfxInt32x2 iPxHrPos, FfxFloat32x2 fHrUv)
 {
 #if FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS
     FfxFloat32x2 fDilatedMotionVector = LoadDilatedMotionVector(FFX_MIN16_I2(fHrUv * RenderSize()));
@@ -78,10 +109,10 @@ void ReprojectHistoryColor(FfxInt32x2 iPxHrPos, FfxFloat32x2 fReprojectedHrUv, F
     fHistoryColorAndWeight.rgb = RGBToYCoCg(fHistoryColorAndWeight.rgb);
 }
 
-void ReprojectHistoryLockStatus(FfxInt32x2 iPxHrPos, FfxFloat32x2 fReprojectedHrUv, FFX_PARAMETER_OUT LOCK_STATUS_T fReprojectedLockStatus)
+void ReprojectHistoryLockStatus(FfxInt32x2 iPxHrPos, FfxFloat32x2 fReprojectedHrUv, FFX_PARAMETER_OUT FfxFloat32x3 fReprojectedLockStatus)
 {
     // If function is called from Accumulate pass, we need to treat locks differently
-    LOCK_STATUS_F1 fInPlaceLockLifetime = LoadRwLockStatus(iPxHrPos)[LOCK_LIFETIME_REMAINING];
+    FfxFloat32 fInPlaceLockLifetime = LoadRwLockStatus(iPxHrPos)[LOCK_LIFETIME_REMAINING];
 
     fReprojectedLockStatus = SampleLockStatus(fReprojectedHrUv);
 
@@ -90,4 +121,5 @@ void ReprojectHistoryLockStatus(FfxInt32x2 iPxHrPos, FfxFloat32x2 fReprojectedHr
         fReprojectedLockStatus[LOCK_LIFETIME_REMAINING] = fInPlaceLockLifetime;
     }
 }
+
 #endif //!defined( FFX_FSR2_REPROJECT_H )

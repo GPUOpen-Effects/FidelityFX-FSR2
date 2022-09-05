@@ -22,7 +22,7 @@
 // FSR2 pass 2
 // SRV  2 : m_MotionVector                      : r_motion_vectors
 // SRV  3 : m_depthbuffer                       : r_depth
-// UAV  7 : FSR2_ReconstructedPrevNearestDepth  : rw_ReconstructedPrevNearestDepth
+// UAV  7 : FSR2_ReconstructedPrevNearestDepth  : rw_reconstructed_previous_nearest_depth
 // UAV  8 : FSR2_DilatedVelocity                : rw_dilated_motion_vectors
 // UAV  9 : FSR2_DilatedDepth                   : rw_dilatedDepth
 // CB   0 : cbFSR2
@@ -34,10 +34,14 @@
 
 #define FSR2_BIND_SRV_MOTION_VECTORS                        0
 #define FSR2_BIND_SRV_DEPTH                                 1
-#define FSR2_BIND_UAV_RECONSTRUCTED_PREV_NEAREST_DEPTH      2
-#define FSR2_BIND_UAV_DILATED_MOTION_VECTORS                3
-#define FSR2_BIND_UAV_DILATED_DEPTH                         4
-#define FSR2_BIND_CB_FSR2                                   5
+#define FSR2_BIND_SRV_REACTIVE_MASK                         2
+#define FSR2_BIND_SRV_TRANSPARENCY_AND_COMPOSITION_MASK     3
+#define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  4
+#define FSR2_BIND_UAV_RECONSTRUCTED_PREV_NEAREST_DEPTH      5
+#define FSR2_BIND_UAV_DILATED_MOTION_VECTORS                6
+#define FSR2_BIND_UAV_DILATED_DEPTH                         7
+#define FSR2_BIND_UAV_DILATED_REACTIVE_MASKS                8
+#define FSR2_BIND_CB_FSR2                                   9
 
 #include "ffx_fsr2_callbacks_glsl.h"
 #include "ffx_fsr2_common.h"
@@ -60,5 +64,5 @@
 FFX_FSR2_NUM_THREADS
 void main()
 {
-	ReconstructPrevDepthAndDilateMotionVectors(FFX_MIN16_I2(gl_GlobalInvocationID.xy));
+	ReconstructAndDilate(FFX_MIN16_I2(gl_GlobalInvocationID.xy));
 }

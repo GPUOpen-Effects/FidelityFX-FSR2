@@ -20,7 +20,6 @@
 # THE SOFTWARE.
 
 cmake_minimum_required(VERSION 3.15)
-#set(CMAKE_CONFIGURATION_TYPES Debug Release)
 set(CMAKE_DEBUG_POSTFIX d)
 
 option (FFX_FSR2_API_DX12 "Build FSR 2.0 DX12 backend" ON)
@@ -55,6 +54,9 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE ${CMAKE_HOME_DIRECTORY}/bin/ffx_fsr2_
 
 add_compile_definitions(_UNICODE)
 add_compile_definitions(UNICODE)
+#add_compile_definitions(FSR2_VERSION_MAJOR=0)
+#add_compile_definitions(FSR2_VERSION_MINOR=1)
+#add_compile_definitions(FSR2_VERSION_PATCH=0)
 
 if(FSR2_VS_VERSION STREQUAL 2015)
     message(NOTICE "Forcing the SDK path for VS 2015")
@@ -65,10 +67,19 @@ set(FFX_SC_EXECUTABLE
     ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/sc/FidelityFX_SC.exe)
 
 set(FFX_SC_BASE_ARGS
-    -reflection -deps=gcc -DFFX_GPU=1 -DOPT_PRECOMPUTE_REACTIVE_MAX=1)
+    -reflection -deps=gcc -DFFX_GPU=1
+    # Only reprojection is to do half for now
+    -DFFX_FSR2_OPTION_UPSAMPLE_SAMPLERS_USE_DATA_HALF=0
+    -DFFX_FSR2_OPTION_ACCUMULATE_SAMPLERS_USE_DATA_HALF=0
+    -DFFX_FSR2_OPTION_REPROJECT_SAMPLERS_USE_DATA_HALF=1
+    -DFFX_FSR2_OPTION_POSTPROCESSLOCKSTATUS_SAMPLERS_USE_DATA_HALF=0
+    # Upsample uses lanczos approximation
+    -DFFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE=2
+    )
 
 set(FFX_SC_PERMUTATION_ARGS
-    -DFFX_FSR2_OPTION_USE_LANCZOS_LUT={0,1}
+    # Reproject can use either reference lanczos or LUT
+    -DFFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE={0,1}
     -DFFX_FSR2_OPTION_HDR_COLOR_INPUT={0,1}
     -DFFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS={0,1}
     -DFFX_FSR2_OPTION_JITTERED_MOTION_VECTORS={0,1}

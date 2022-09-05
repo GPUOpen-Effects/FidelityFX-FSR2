@@ -26,11 +26,12 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <codecvt>
 
 // prototypes for functions in the interface
 FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDeviceCapabilities* deviceCapabilities, FfxDevice device);
-FfxErrorCode CreateDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice device);
-FfxErrorCode DestroyDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice device);
+FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevice device);
+FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface);
 FfxErrorCode CreateResourceVK(FfxFsr2Interface* backendInterface, const FfxCreateResourceDescription* desc, FfxResourceInternal* outResource);
 FfxErrorCode RegisterResourceVK(FfxFsr2Interface* backendInterface, const FfxResource* inResource, FfxResourceInternal* outResourceInternal);
 FfxErrorCode UnregisterResourcesVK(FfxFsr2Interface* backendInterface);
@@ -38,14 +39,14 @@ FfxResourceDescription GetResourceDescriptorVK(FfxFsr2Interface* backendInterfac
 FfxErrorCode DestroyResourceVK(FfxFsr2Interface* backendInterface, FfxResourceInternal resource);
 FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass passId, const FfxPipelineDescription* desc, FfxPipelineState* outPass);
 FfxErrorCode DestroyPipelineVK(FfxFsr2Interface* backendInterface, FfxPipelineState* pipeline);
-FfxErrorCode ScheduleRenderJobVK(FfxFsr2Interface* backendInterface, const FfxRenderJobDescription* job);
-FfxErrorCode ExecuteRenderJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList commandList);
+FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface* backendInterface, const FfxGpuJobDescription* job);
+FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList commandList);
 
 #define FSR2_MAX_QUEUED_FRAMES              ( 4)
 #define FSR2_MAX_RESOURCE_COUNT             (64)
 #define FSR2_MAX_STAGING_RESOURCE_COUNT     ( 8)
 #define FSR2_MAX_BARRIERS                   (16)
-#define FSR2_MAX_RENDERJOBS                 (32)
+#define FSR2_MAX_GPU_JOBS                   (32)
 #define FSR2_MAX_IMAGE_COPY_MIPS            (32)
 #define FSR2_MAX_SAMPLERS                   ( 2)
 #define FSR2_MAX_UNIFORM_BUFFERS            ( 4)
@@ -135,8 +136,8 @@ typedef struct BackendContext_VK {
     VkDevice                device = nullptr;
     VkFunctionTable         vkFunctionTable = {};
                             
-    uint32_t                renderJobCount = 0;
-    FfxRenderJobDescription renderJobs[FSR2_MAX_RENDERJOBS] = {};
+    uint32_t                gpuJobCount = 0;
+    FfxGpuJobDescription    gpuJobs[FSR2_MAX_GPU_JOBS] = {};
 
     uint32_t                nextStaticResource = 0;
     uint32_t                nextDynamicResource = 0;
@@ -197,8 +198,8 @@ FfxErrorCode ffxFsr2GetInterfaceVK(
         FFX_ERROR_INSUFFICIENT_MEMORY);
 
     outInterface->fpGetDeviceCapabilities = GetDeviceCapabilitiesVK;
-    outInterface->fpCreateDevice = CreateDeviceVK;
-    outInterface->fpDestroyDevice = DestroyDeviceVK;
+    outInterface->fpCreateBackendContext = CreateBackendContextVK;
+    outInterface->fpDestroyBackendContext = DestroyBackendContextVK;
     outInterface->fpCreateResource = CreateResourceVK;
     outInterface->fpRegisterResource = RegisterResourceVK;
     outInterface->fpUnregisterResources = UnregisterResourcesVK;
@@ -206,8 +207,8 @@ FfxErrorCode ffxFsr2GetInterfaceVK(
     outInterface->fpDestroyResource = DestroyResourceVK;
     outInterface->fpCreatePipeline = CreatePipelineVK;
     outInterface->fpDestroyPipeline = DestroyPipelineVK;
-    outInterface->fpScheduleRenderJob = ScheduleRenderJobVK;
-    outInterface->fpExecuteRenderJobs = ExecuteRenderJobsVK;
+    outInterface->fpScheduleGpuJob = ScheduleGpuJobVK;
+    outInterface->fpExecuteGpuJobs = ExecuteGpuJobsVK;
     outInterface->scratchBuffer = scratchBuffer;
     outInterface->scratchBufferSize = scratchBufferSize;
 
@@ -305,6 +306,8 @@ VkFormat getVKFormatFromSurfaceFormat(FfxSurfaceFormat fmt)
         return VK_FORMAT_R16_SNORM;
     case(FFX_SURFACE_FORMAT_R8_UNORM):
         return VK_FORMAT_R8_UNORM;
+    case(FFX_SURFACE_FORMAT_R8G8_UNORM):
+        return VK_FORMAT_R8G8_UNORM;
     case(FFX_SURFACE_FORMAT_R32_FLOAT):
         return VK_FORMAT_R32_SFLOAT;
     default:
@@ -749,7 +752,7 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
     return FFX_OK;
 }
 
-FfxErrorCode CreateDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice device)
+FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevice device)
 {
     FFX_ASSERT(NULL != backendInterface);
 
@@ -926,7 +929,7 @@ FfxErrorCode CreateDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice device
         }
     }
 
-    backendContext->renderJobCount = 0;
+    backendContext->gpuJobCount = 0;
     backendContext->scheduledImageBarrierCount = 0;
     backendContext->scheduledBufferBarrierCount = 0;
     backendContext->stagingResourceCount = 0;
@@ -938,7 +941,7 @@ FfxErrorCode CreateDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice device
     return FFX_OK;
 }
 
-FfxErrorCode DestroyDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice device)
+FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface)
 {
     FFX_ASSERT(NULL != backendInterface);
 
@@ -973,8 +976,7 @@ FfxErrorCode DestroyDeviceVK(FfxFsr2Interface* backendInterface, FfxDevice devic
     backendContext->pointSampler = nullptr;
     backendContext->linearSampler = nullptr;
 
-    VkDevice vkDevice = reinterpret_cast<VkDevice>(device);
-    if (vkDevice != nullptr) {
+    if (backendContext->device != nullptr) {
 
         backendContext->device = nullptr;
     }
@@ -992,8 +994,8 @@ FfxErrorCode CreateResourceVK(
     FFX_ASSERT(NULL != createResourceDescription);
     FFX_ASSERT(NULL != outResource);
 
-    VkDevice vkDevice = reinterpret_cast<VkDevice>(createResourceDescription->device);
     BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
+    VkDevice vkDevice = reinterpret_cast<VkDevice>(backendContext->device);
 
     FFX_ASSERT(backendContext->nextStaticResource + 1 < backendContext->nextDynamicResource);
     outResource->internalIndex = backendContext->nextStaticResource++;
@@ -1196,14 +1198,14 @@ FfxErrorCode CreateResourceVK(
             backendInterface->fpCreateResource(backendInterface, &uploadDesc, &copySrc);
 
             // setup the upload job
-            FfxRenderJobDescription copyJob =
+            FfxGpuJobDescription copyJob =
             {
-                FFX_RENDER_JOB_COPY
+                FFX_GPU_JOB_COPY
             };
             copyJob.copyJobDescriptor.src = copySrc;
             copyJob.copyJobDescriptor.dst = *outResource;
 
-            backendInterface->fpScheduleRenderJob(backendInterface, &copyJob);
+            backendInterface->fpScheduleGpuJob(backendInterface, &copyJob);
 
             // add to the list of staging resources to delete later 
             uint32_t stagingResIdx = backendContext->stagingResourceCount++;
@@ -1277,12 +1279,11 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     flags |= (pipelineDescription->contextFlags & FFX_FSR2_ENABLE_MOTION_VECTORS_JITTER_CANCELLATION) ? FSR2_SHADER_PERMUTATION_JITTER_MOTION_VECTORS : 0;
     flags |= (pipelineDescription->contextFlags & FFX_FSR2_ENABLE_DEPTH_INVERTED) ? FSR2_SHADER_PERMUTATION_DEPTH_INVERTED : 0;
     flags |= (pass == FFX_FSR2_PASS_ACCUMULATE_SHARPEN) ? FSR2_SHADER_PERMUTATION_ENABLE_SHARPENING : 0;
-    flags |= (useLut) ? FSR2_SHADER_PERMUTATION_LANCZOS_LUT : 0;
+    flags |= (useLut) ? FSR2_SHADER_PERMUTATION_REPROJECT_USE_LANCZOS_TYPE : 0;
     flags |= (canForceWave64) ? FSR2_SHADER_PERMUTATION_FORCE_WAVE64 : 0;
-    flags |= (supportedFP16) ? FSR2_SHADER_PERMUTATION_ALLOW_FP16 : 0;
+    flags |= (supportedFP16 && (pass != FFX_FSR2_PASS_RCAS)) ? FSR2_SHADER_PERMUTATION_ALLOW_FP16 : 0;
 
-    Fsr2ShaderBlobVK shaderBlob = {};
-    fsr2GetPermutationBlobByIndex(pass, flags, &shaderBlob);
+    const Fsr2ShaderBlobVK shaderBlob = fsr2GetPermutationBlobByIndex(pass, flags);
     FFX_ASSERT(shaderBlob.data && shaderBlob.size);
 
     // populate the pass.
@@ -1292,21 +1293,22 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
 
     FFX_ASSERT(shaderBlob.storageImageCount < FFX_MAX_NUM_UAVS);
     FFX_ASSERT(shaderBlob.sampledImageCount < FFX_MAX_NUM_SRVS);
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
 
     for (uint32_t srvIndex = 0; srvIndex < outPipeline->srvCount; ++srvIndex)
     {
         outPipeline->srvResourceBindings[srvIndex].slotIndex = shaderBlob.boundSampledImageBindings[srvIndex];
-        strcpy_s(outPipeline->srvResourceBindings[srvIndex].name, shaderBlob.boundSampledImageNames[srvIndex]);
+        wcscpy_s(outPipeline->srvResourceBindings[srvIndex].name, converter.from_bytes(shaderBlob.boundSampledImageNames[srvIndex]).c_str());
     }
     for (uint32_t uavIndex = 0; uavIndex < outPipeline->uavCount; ++uavIndex)
     {
         outPipeline->uavResourceBindings[uavIndex].slotIndex = shaderBlob.boundStorageImageBindings[uavIndex];
-        strcpy_s(outPipeline->uavResourceBindings[uavIndex].name, shaderBlob.boundStorageImageNames[uavIndex]);
+        wcscpy_s(outPipeline->uavResourceBindings[uavIndex].name, converter.from_bytes(shaderBlob.boundStorageImageNames[uavIndex]).c_str());
     }
     for (uint32_t cbIndex = 0; cbIndex < outPipeline->constCount; ++cbIndex)
     {
         outPipeline->cbResourceBindings[cbIndex].slotIndex = shaderBlob.boundUniformBufferBindings[cbIndex];
-        strcpy_s(outPipeline->cbResourceBindings[cbIndex].name, shaderBlob.boundUniformBufferNames[cbIndex]);
+        wcscpy_s(outPipeline->cbResourceBindings[cbIndex].name, converter.from_bytes(shaderBlob.boundUniformBufferNames[cbIndex]).c_str());
     }
 
     // create descriptor set layout
@@ -1429,21 +1431,21 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     return FFX_OK;
 }
 
-FfxErrorCode ScheduleRenderJobVK(FfxFsr2Interface* backendInterface, const FfxRenderJobDescription* job)
+FfxErrorCode ScheduleGpuJobVK(FfxFsr2Interface* backendInterface, const FfxGpuJobDescription* job)
 {
     FFX_ASSERT(NULL != backendInterface);
     FFX_ASSERT(NULL != job);
 
     BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
 
-    FFX_ASSERT(backendContext->renderJobCount < FSR2_MAX_RENDERJOBS);
+    FFX_ASSERT(backendContext->gpuJobCount < FSR2_MAX_GPU_JOBS);
 
-    backendContext->renderJobs[backendContext->renderJobCount] = *job;
+    backendContext->gpuJobs[backendContext->gpuJobCount] = *job;
 
-    if (job->jobType == FFX_RENDER_JOB_COMPUTE) {
+    if (job->jobType == FFX_GPU_JOB_COMPUTE) {
 
         // needs to copy SRVs and UAVs in case they are on the stack only
-        FfxComputeJobDescription* computeJob = &backendContext->renderJobs[backendContext->renderJobCount].computeJobDescriptor;
+        FfxComputeJobDescription* computeJob = &backendContext->gpuJobs[backendContext->gpuJobCount].computeJobDescriptor;
         const uint32_t numConstBuffers = job->computeJobDescriptor.pipeline.constCount;
         for (uint32_t currentRootConstantIndex = 0; currentRootConstantIndex < numConstBuffers; ++currentRootConstantIndex)
         {
@@ -1452,7 +1454,7 @@ FfxErrorCode ScheduleRenderJobVK(FfxFsr2Interface* backendInterface, const FfxRe
         }
     }
 
-    backendContext->renderJobCount++;
+    backendContext->gpuJobCount++;
 
     return FFX_OK;
 }
@@ -1540,7 +1542,7 @@ void flushBarriers(BackendContext_VK* backendContext, VkCommandBuffer vkCommandB
     }
 }
 
-static FfxErrorCode executeRenderJobCompute(BackendContext_VK* backendContext, FfxRenderJobDescription* job, VkCommandBuffer vkCommandBuffer)
+static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxGpuJobDescription* job, VkCommandBuffer vkCommandBuffer)
 {
     uint32_t               imageInfoIndex = 0;
     uint32_t               bufferInfoIndex = 0;
@@ -1646,7 +1648,7 @@ static FfxErrorCode executeRenderJobCompute(BackendContext_VK* backendContext, F
     return FFX_OK;
 }
 
-static FfxErrorCode executeRenderJobCopy(BackendContext_VK* backendContext, FfxRenderJobDescription* job, VkCommandBuffer vkCommandBuffer)
+static FfxErrorCode executeGpuJobCopy(BackendContext_VK* backendContext, FfxGpuJobDescription* job, VkCommandBuffer vkCommandBuffer)
 {
     BackendContext_VK::Resource ffxResourceSrc = backendContext->resources[job->copyJobDescriptor.src.internalIndex];
     BackendContext_VK::Resource ffxResourceDst = backendContext->resources[job->copyJobDescriptor.dst.internalIndex];
@@ -1745,7 +1747,7 @@ static FfxErrorCode executeRenderJobCopy(BackendContext_VK* backendContext, FfxR
     return FFX_OK;
 }
 
-static FfxErrorCode executeRenderJobClearFloat(BackendContext_VK* backendContext, FfxRenderJobDescription* job, VkCommandBuffer vkCommandBuffer)
+static FfxErrorCode executeGpuJobClearFloat(BackendContext_VK* backendContext, FfxGpuJobDescription* job, VkCommandBuffer vkCommandBuffer)
 {
     uint32_t idx = job->clearJobDescriptor.target.internalIndex;
     BackendContext_VK::Resource ffxResource = backendContext->resources[idx];
@@ -1777,7 +1779,7 @@ static FfxErrorCode executeRenderJobClearFloat(BackendContext_VK* backendContext
     return FFX_OK;
 }
 
-FfxErrorCode ExecuteRenderJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList commandList)
+FfxErrorCode ExecuteGpuJobsVK(FfxFsr2Interface* backendInterface, FfxCommandList commandList)
 {
     FFX_ASSERT(NULL != backendInterface);
 
@@ -1786,26 +1788,26 @@ FfxErrorCode ExecuteRenderJobsVK(FfxFsr2Interface* backendInterface, FfxCommandL
     FfxErrorCode errorCode = FFX_OK;
 
     // execute all renderjobs
-    for (uint32_t i = 0; i < backendContext->renderJobCount; ++i)
+    for (uint32_t i = 0; i < backendContext->gpuJobCount; ++i)
     {
-        FfxRenderJobDescription* renderJob = &backendContext->renderJobs[i];
+        FfxGpuJobDescription* gpuJob = &backendContext->gpuJobs[i];
         VkCommandBuffer vkCommandBuffer = reinterpret_cast<VkCommandBuffer>(commandList);
 
-        switch (renderJob->jobType)
+        switch (gpuJob->jobType)
         {
-        case FFX_RENDER_JOB_CLEAR_FLOAT:
+        case FFX_GPU_JOB_CLEAR_FLOAT:
         {
-            errorCode = executeRenderJobClearFloat(backendContext, renderJob, vkCommandBuffer);
+            errorCode = executeGpuJobClearFloat(backendContext, gpuJob, vkCommandBuffer);
             break;
         }
-        case FFX_RENDER_JOB_COPY:
+        case FFX_GPU_JOB_COPY:
         {
-            errorCode = executeRenderJobCopy(backendContext, renderJob, vkCommandBuffer);
+            errorCode = executeGpuJobCopy(backendContext, gpuJob, vkCommandBuffer);
             break;
         }
-        case FFX_RENDER_JOB_COMPUTE:
+        case FFX_GPU_JOB_COMPUTE:
         {
-            errorCode = executeRenderJobCompute(backendContext, renderJob, vkCommandBuffer);
+            errorCode = executeGpuJobCompute(backendContext, gpuJob, vkCommandBuffer);
             break;
         }
         default:;
@@ -1817,7 +1819,7 @@ FfxErrorCode ExecuteRenderJobsVK(FfxFsr2Interface* backendInterface, FfxCommandL
         errorCode == FFX_OK,
         FFX_ERROR_BACKEND_API_ERROR);
 
-    backendContext->renderJobCount = 0;
+    backendContext->gpuJobCount = 0;
 
     return FFX_OK;
 }

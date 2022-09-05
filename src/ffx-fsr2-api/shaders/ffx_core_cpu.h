@@ -36,6 +36,10 @@
 #define FFX_STATIC static
 #endif // #if !defined(FFX_STATIC)
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wunused-variable"
+#endif
+
 /// Interpret the bit layout of an IEEE-754 floating point value as an unsigned integer.
 ///
 /// @param [in] x               A 32bit floating value.

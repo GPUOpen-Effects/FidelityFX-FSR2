@@ -35,7 +35,7 @@ typedef struct Fsr2ShaderBlobDX12 {
     const uint32_t  size;               // Size in bytes.
     const uint32_t  uavCount;           // Number of UAV.
     const uint32_t  srvCount;           // Number of SRV.
-    const uint32_t  cbvCount;            // Number of CBs.
+    const uint32_t  cbvCount;           // Number of CBs.
     const char**    boundUAVResourceNames;
     const uint32_t* boundUAVResources;  // Pointer to an array of bound UAV resources.
     const char**    boundSRVResourceNames;
@@ -47,7 +47,7 @@ typedef struct Fsr2ShaderBlobDX12 {
 // The different options which contribute to permutations.
 typedef enum Fs2ShaderPermutationOptionsDX12 {
 
-    FSR2_SHADER_PERMUTATION_LANCZOS_LUT             = (1<<0),    // FFX_FSR2_OPTION_USE_LANCZOS_LUT
+    FSR2_SHADER_PERMUTATION_USE_LANCZOS_TYPE        = (1<<0),    // FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE. Off means reference, On means LUT
     FSR2_SHADER_PERMUTATION_HDR_COLOR_INPUT         = (1<<1),    // FFX_FSR2_OPTION_HDR_COLOR_INPUT
     FSR2_SHADER_PERMUTATION_LOW_RES_MOTION_VECTORS  = (1<<2),    // FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS
     FSR2_SHADER_PERMUTATION_JITTER_MOTION_VECTORS   = (1<<3),    // FFX_FSR2_OPTION_JITTERED_MOTION_VECTORS
@@ -58,10 +58,7 @@ typedef enum Fs2ShaderPermutationOptionsDX12 {
 } Fs2ShaderPermutationOptionsDX12;
 
 // Get a DX12 shader blob for the specified pass and permutation index.
-FfxErrorCode fsr2GetPermutationBlobByIndex(
-    FfxFsr2Pass passId,
-    uint32_t permutationOptions,
-    Fsr2ShaderBlobDX12* outBlob);
+Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions);
 
 #if defined(__cplusplus)
 }

@@ -28,14 +28,14 @@
 #define FSR2_BIND_SRV_POST_ALPHA_COLOR                      1
 #define FSR2_BIND_UAV_REACTIVE                              2
 #define FSR2_BIND_CB_REACTIVE                               3
-#define FSR2_BIND_CB_FSR2									4
+#define FSR2_BIND_CB_FSR2                                   4
 
 #include "ffx_fsr2_callbacks_glsl.h"
 #include "ffx_fsr2_common.h"
 
-layout (set = 1, binding = FSR2_BIND_SRV_PRE_ALPHA_COLOR) 	uniform texture2D   r_input_color_pre_alpha;
-layout (set = 1, binding = FSR2_BIND_SRV_POST_ALPHA_COLOR) 	uniform texture2D   r_input_color_post_alpha;
-layout (set = 1, binding = FSR2_BIND_UAV_REACTIVE, r8)   uniform image2D     rw_output_reactive_mask;
+layout (set = 1, binding = FSR2_BIND_SRV_PRE_ALPHA_COLOR)  uniform texture2D   r_input_color_pre_alpha;
+layout (set = 1, binding = FSR2_BIND_SRV_POST_ALPHA_COLOR) uniform texture2D   r_input_color_post_alpha;
+layout (set = 1, binding = FSR2_BIND_UAV_REACTIVE, r8)     uniform image2D     rw_output_reactive_mask;
 
 
 #ifndef FFX_FSR2_THREAD_GROUP_WIDTH
@@ -55,8 +55,8 @@ layout (set = 1, binding = FSR2_BIND_CB_REACTIVE, std140) uniform cbGenerateReac
 {
 	float   scale;
 	float   threshold;
+	float   binaryValue;
 	uint    flags;
-	float   _padding_;
 } cbGenerateReactive;
 
 FFX_FSR2_NUM_THREADS
@@ -85,7 +85,7 @@ void main()
     out_reactive_value = ((cbGenerateReactive.flags & FFX_FSR2_AUTOREACTIVEFLAGS_USE_COMPONENTS_MAX)!=0) ? max(delta.x, max(delta.y, delta.z)) : length(delta);
     out_reactive_value *= cbGenerateReactive.scale;
 
-    out_reactive_value = ((cbGenerateReactive.flags & FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_THRESHOLD)!=0) ? ((out_reactive_value < cbGenerateReactive.threshold) ? 0 : 1) : out_reactive_value;
+    out_reactive_value = ((cbGenerateReactive.flags & FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_THRESHOLD)!=0) ? ((out_reactive_value < cbGenerateReactive.threshold) ? 0 : cbGenerateReactive.binaryValue) : out_reactive_value;
 
     imageStore(rw_output_reactive_mask, FfxInt32x2(uDispatchThreadId), vec4(out_reactive_value));
 }

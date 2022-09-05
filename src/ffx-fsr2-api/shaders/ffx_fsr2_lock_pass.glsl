@@ -33,12 +33,10 @@
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_samplerless_texture_functions : require
 
-#define FSR2_BIND_SRV_REACTIVE_MASK                         0
-#define FSR2_BIND_SRV_LOCK_STATUS                           1
-#define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  2
-#define FSR2_BIND_UAV_LOCK_STATUS                           3
-#define FSR2_BIND_UAV_REACTIVE_MASK_MAX                     4
-#define FSR2_BIND_CB_FSR2                                   5
+#define FSR2_BIND_SRV_LOCK_STATUS                           0
+#define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  1
+#define FSR2_BIND_UAV_LOCK_STATUS                           2
+#define FSR2_BIND_CB_FSR2                                   3
 
 #include "ffx_fsr2_callbacks_glsl.h"
 #include "ffx_fsr2_common.h"
@@ -61,9 +59,7 @@
 FFX_FSR2_NUM_THREADS
 void main()
 {
-	uvec2 uDispatchThreadId = gl_WorkGroupID.xy * uvec2(FFX_FSR2_THREAD_GROUP_WIDTH, FFX_FSR2_THREAD_GROUP_HEIGHT) + gl_LocalInvocationID.xy;
+    uvec2 uDispatchThreadId = gl_WorkGroupID.xy * uvec2(FFX_FSR2_THREAD_GROUP_WIDTH, FFX_FSR2_THREAD_GROUP_HEIGHT) + gl_LocalInvocationID.xy;
 
-    ComputeLock(FFX_MIN16_I2(uDispatchThreadId));
-
-    PreProcessReactiveMask(FFX_MIN16_I2(uDispatchThreadId), gl_WorkGroupID.xy, gl_LocalInvocationID.xy);
+    ComputeLock(ivec2(uDispatchThreadId));
 }

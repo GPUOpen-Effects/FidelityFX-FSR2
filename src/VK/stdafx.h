@@ -85,5 +85,5 @@
 #include "Widgets/WireframeSphere.h"
 
 
-
+#define API_VULKAN
 using namespace CAULDRON_VK;

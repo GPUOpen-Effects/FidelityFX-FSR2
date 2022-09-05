@@ -97,7 +97,7 @@ void SPD_SetExposureBuffer(float2 value)
 #endif
 }
 
-float4 SPD_LoadMipmap5(min16int2 iPxPos)
+float4 SPD_LoadMipmap5(int2 iPxPos)
 {
 #if defined(FSR2_BIND_UAV_EXPOSURE_MIP_5) || defined(FFX_INTERNAL)
     return float4(rw_img_mip_5[iPxPos], 0, 0, 0);
@@ -106,7 +106,7 @@ float4 SPD_LoadMipmap5(min16int2 iPxPos)
 #endif
 }
 
-void SPD_SetMipmap(min16int2 iPxPos, int slice, float value)
+void SPD_SetMipmap(int2 iPxPos, int slice, float value)
 {
     switch (slice)
     {

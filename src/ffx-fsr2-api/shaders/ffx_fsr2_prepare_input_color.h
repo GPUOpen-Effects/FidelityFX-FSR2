@@ -19,10 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#ifndef FFX_FSR2_PREPARE_INPUT_COLOR_H
+#define FFX_FSR2_PREPARE_INPUT_COLOR_H
+
 //TODO: Move to common location & share with Accumulate
-void ClearResourcesForNextFrame(in FFX_MIN16_I2 iPxHrPos)
+void ClearResourcesForNextFrame(in FfxInt32x2 iPxHrPos)
 {
-    if (all(FFX_LESS_THAN(iPxHrPos, FFX_MIN16_I2(RenderSize()))))
+    if (all(FFX_LESS_THAN(iPxHrPos, FfxInt32x2(RenderSize()))))
     {
 #if FFX_FSR2_OPTION_INVERTED_DEPTH
         const FfxUInt32 farZ = 0x0;
@@ -33,7 +36,7 @@ void ClearResourcesForNextFrame(in FFX_MIN16_I2 iPxHrPos)
     }
 }
 
-void ComputeLumaStabilityFactor(FFX_MIN16_I2 iPxLrPos, FfxFloat32 fCurrentFrameLuma)
+void ComputeLumaStabilityFactor(FfxInt32x2 iPxLrPos, FfxFloat32 fCurrentFrameLuma)
 {
     FfxFloat32x4 fCurrentFrameLumaHistory = LoadRwLumaHistory(iPxLrPos);
 
@@ -54,12 +57,12 @@ void ComputeLumaStabilityFactor(FFX_MIN16_I2 iPxLrPos, FfxFloat32 fCurrentFrameL
     StoreLumaHistory(iPxLrPos, fCurrentFrameLumaHistory);
 }
 
-void PrepareInputColor(FFX_MIN16_I2 iPxLrPos)
+void PrepareInputColor(FfxInt32x2 iPxLrPos)
 {
     //We assume linear data. if non-linear input (sRGB, ...),
     //then we should convert to linear first and back to sRGB on output.
 
-    FfxFloat32x3 fRgb = ffxMax(FFX_BROADCAST_FLOAT32X3(0), LoadInputColor(iPxLrPos));
+    FfxFloat32x3 fRgb = ffxMax(FfxFloat32x3(0, 0, 0), LoadInputColor(iPxLrPos));
 
     fRgb *= Exposure();
 
@@ -68,16 +71,18 @@ void PrepareInputColor(FFX_MIN16_I2 iPxLrPos)
     fRgb = Tonemap(fRgb);
 #endif
 
-    PREPARED_INPUT_COLOR_T fYCoCg;
+    FfxFloat32x4 fYCoCg;
 
-    fYCoCg.xyz = PREPARED_INPUT_COLOR_F3(RGBToYCoCg(fRgb));
+    fYCoCg.xyz = RGBToYCoCg(fRgb);
 
     const FfxFloat32 fPerceivedLuma = RGBToPerceivedLuma(fRgb);
     ComputeLumaStabilityFactor(iPxLrPos, fPerceivedLuma);
 
     //compute luma used to lock pixels, if used elsewhere the ffxPow must be moved!
-    fYCoCg.w = PREPARED_INPUT_COLOR_F1(ffxPow(fPerceivedLuma, 1.0f / 6.0f));
+    fYCoCg.w = ffxPow(fPerceivedLuma, FfxFloat32(1.0 / 6.0));
 
     StorePreparedInputColor(iPxLrPos, fYCoCg);
     ClearResourcesForNextFrame(iPxLrPos);
 }
+
+#endif // FFX_FSR2_PREPARE_INPUT_COLOR_H

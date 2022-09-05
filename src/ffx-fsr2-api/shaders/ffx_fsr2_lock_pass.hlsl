@@ -24,15 +24,11 @@
 // SRV 11 : FSR2_LockStatus2                    : r_lock_status
 // SRV 13 : FSR2_PreparedInputColor             : r_prepared_input_color
 // UAV 11 : FSR2_LockStatus1                    : rw_lock_status
-// UAV 27 : FSR2_ReactiveMaskMax                : rw_reactive_max
 // CB   0 : cbFSR2
-// CB   1 : FSR2DispatchOffsets
 
-#define FSR2_BIND_SRV_REACTIVE_MASK                         0
 #define FSR2_BIND_SRV_LOCK_STATUS                           1
 #define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  2
 #define FSR2_BIND_UAV_LOCK_STATUS                           0
-#define FSR2_BIND_UAV_REACTIVE_MASK_MAX                     1
 #define FSR2_BIND_CB_FSR2                                   0
 
 #include "ffx_fsr2_callbacks_hlsl.h"
@@ -61,6 +57,4 @@ void CS(uint2 uGroupId : SV_GroupID, uint2 uGroupThreadId : SV_GroupThreadID)
     uint2 uDispatchThreadId = uGroupId * uint2(FFX_FSR2_THREAD_GROUP_WIDTH, FFX_FSR2_THREAD_GROUP_HEIGHT) + uGroupThreadId;
 
     ComputeLock(uDispatchThreadId);
-
-    PreProcessReactiveMask(uDispatchThreadId, uGroupId, uGroupThreadId);
 }

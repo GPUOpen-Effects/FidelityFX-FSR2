@@ -27,6 +27,10 @@
 #include "PostProc/MagnifierPS.h"
 #include "UpscaleContext.h"
 #include "GPUFrameRateLimiter.h"
+#include "AnimatedTexture.h"
+
+#include "../GpuParticles/ParticleSystem.h"
+#include "../GpuParticleShaders/ShaderConstants.h"
 
 // We are queuing (backBufferCount + 0.5) frames, so we need to triple buffer the resources that get modified each frame
 static const int backBufferCount = 3;
@@ -62,6 +66,25 @@ public:
     void BuildDevUI(UIState* pState);
 
 private:
+
+    struct State
+    {
+        float                               frameTime = 0.0f;
+        int                                 numEmitters = 0;
+        IParticleSystem::EmitterParams      emitters[10] = {};
+        int                                 flags = 0;
+        IParticleSystem::ConstantData       constantData = {};
+    };
+
+    struct EmissionRate
+    {
+        float           m_ParticlesPerSecond = 0.0f;    // Number of particles to emit per second
+        float           m_Accumulation = 0.0f;          // Running total of how many particles to emit over elapsed time
+    };
+
+    void ResetScene();
+    void PopulateEmitters(bool playAnimations, int activeScene, float frameTime);
+
     Device *m_pDevice;
 
     uint32_t                        m_Width;
@@ -97,6 +120,13 @@ private:
     MagnifierPS                     m_MagnifierPS;
     bool                            m_bMagResourceReInit = false;
 
+    // GPU Particle System
+    State                           m_state = {};
+    IParticleSystem*                m_pGPUParticleSystem = nullptr;
+    EmissionRate                    m_EmissionRates[NUM_EMITTERS] = {};
+
+    AnimatedTextures                m_AnimatedTextures = {};
+
     // Upscale
     UpscaleContext*                 m_pUpscaleContext = nullptr;
     VkRenderPass                    m_RenderPassDisplayOutput;
@@ -110,6 +140,7 @@ private:
     GBufferRenderPass               m_RenderPassFullGBufferWithClear;
     GBufferRenderPass               m_RenderPassJustDepthAndHdr;
     GBufferRenderPass               m_RenderPassFullGBuffer;
+    GBufferRenderPass               m_RenderPassFullGBufferNoDepthWrite;
 
     Texture                         m_OpaqueTexture;
     VkImageView                     m_OpaqueTextureSRV;

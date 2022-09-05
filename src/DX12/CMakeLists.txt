@@ -38,6 +38,14 @@ set(sources
     stdafx.h
     UI.cpp
     UI.h
+    AnimatedTexture.cpp
+    AnimatedTexture.h
+    ../GpuParticles/ParticleHelpers.h
+    ../GpuParticles/ParticleSystem.h
+    ../GpuParticles/ParticleSystemInternal.h
+    ../GpuParticles/dx12/GPUParticleSystem.cpp
+    ../GpuParticles/dx12/ParallelSort.h
+    ../GpuParticles/dx12/ParallelSort.cpp
     dpiawarescaling.manifest)
 
 set(fsr1_shaders_src
@@ -94,26 +102,40 @@ set(fsr2_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_rcas.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_autogen_reactive_pass.hlsl)
 
-set(sample_shader_src
-    ${CMAKE_CURRENT_SOURCE_DIR}/UpscaleSpatial.hlsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/FSRPass.hlsl
+set(particle_shaders_src
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleStructs.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleHelpers.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/fp16util.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParallelSortCS.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleEmit.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleRender.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleSimulation.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ShaderConstants.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/SimulationBindings.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-parallelsort/FFX_ParallelSort.h)
+
+set(sample_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/GPUFrameRateLimiter.hlsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/DebugBlit.hlsl)
+    ${CMAKE_CURRENT_SOURCE_DIR}/AnimatedTexture.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/DebugBlit.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/UpscaleSpatial.hlsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/FSRPass.hlsl)
 
 set(APP_ICON_GPUOPEN "${CMAKE_CURRENT_SOURCE_DIR}/../common/GpuOpenIcon.rc")
 
 source_group("sources" FILES ${sources})
-source_group("shaders" FILES ${sample_shader_src})
-source_group("spd_shaders" FILES ${spd_shaders_src})
-source_group("fsr1_shaders" FILES ${fsr1_shaders_src})
+source_group("spatial_shaders" FILES ${fsr1_shaders_src})
 source_group("fsr2_shaders" FILES ${fsr2_shaders_src})
+source_group("particle_shaders" FILES ${particle_shaders_src})
+source_group("sample_shaders" FILES ${sample_shaders_src})
 
 copyCommand("${spd_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX)
 copyCommand("${fsr1_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX)
 copyCommand("${fsr2_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX)
-copyCommand("${sample_shader_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX)
+copyCommand("${particle_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX)
+copyCommand("${sample_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX)
 
-add_executable(FSR2_Sample_DX12 WIN32 ${sources} ${fsr1_shaders_src} ${spd_shaders_src} ${fsr2_shaders_src} ${sample_shader_src} ${common} ${APP_ICON_GPUOPEN})
+add_executable(FSR2_Sample_DX12 WIN32 ${sources} ${fsr2_src} ${sample_shaders_src} ${fsr1_shaders_src} ${fsr2_shaders_src} ${particle_shaders_src} ${spd_shaders_src} ${common} ${APP_ICON_GPUOPEN})
 target_compile_definitions(FSR2_Sample_DX12 PRIVATE USE_PIX=1 $<$<CONFIG:RelWithDebInfo>:FSR2_DEBUG_SHADERS=1>)
 target_link_libraries(FSR2_Sample_DX12 LINK_PUBLIC FSR2_Sample_Common Cauldron_DX12 ImGUI amd_ags d3dcompiler D3D12 ffx_fsr2_api_x64 ffx_fsr2_api_dx12_x64)
 target_include_directories(FSR2_Sample_DX12 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api ${CMAKE_CURRENT_SOURCE_DIR}/../../libs)

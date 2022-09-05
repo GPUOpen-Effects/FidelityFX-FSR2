@@ -23,8 +23,8 @@
 
 #pragma once
 
-static const int32_t FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH = 16;
-static const int32_t FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT = 16;
+static const int FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH = 16;
+static const int FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT = 16;
 static const float ffxFsr2MaximumBias[] = {
 	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	1.876f,	1.809f,	1.772f,	1.753f,	1.748f,
 	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	2.0f,	1.869f,	1.801f,	1.764f,	1.745f,	1.739f,

@@ -104,8 +104,11 @@ void UpscaleContext_FSR2_API::OnCreateWindowSizeDependentResources(
     initializationParameters.maxRenderSize.height = renderHeight;
     initializationParameters.displaySize.width = displayWidth;
     initializationParameters.displaySize.height = displayHeight;
-    initializationParameters.flags = FFX_FSR2_ENABLE_DEPTH_INVERTED
-                                   | FFX_FSR2_ENABLE_AUTO_EXPOSURE;
+    initializationParameters.flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE;
+
+    if (m_bInvertedDepth) {
+        initializationParameters.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
+    }
 
     if (hdr) {
         initializationParameters.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
@@ -130,8 +133,13 @@ void UpscaleContext_FSR2_API::OnCreateWindowSizeDependentResources(
 void UpscaleContext_FSR2_API::OnDestroyWindowSizeDependentResources()
 {
     UpscaleContext::OnDestroyWindowSizeDependentResources();
-    ffxFsr2ContextDestroy(&context);
-    free(initializationParameters.callbacks.scratchBuffer);
+    // only destroy contexts which are live
+    if (initializationParameters.callbacks.scratchBuffer != nullptr)
+    {
+        ffxFsr2ContextDestroy(&context);
+        free(initializationParameters.callbacks.scratchBuffer);
+        initializationParameters.callbacks.scratchBuffer = nullptr;
+    }
 }
 
 void UpscaleContext_FSR2_API::BuildDevUI(UIState* pState)
@@ -158,6 +166,7 @@ void UpscaleContext_FSR2_API::GenerateReactiveMask(ID3D12GraphicsCommandList* pC
 
     generateReactiveParameters.scale = pState->fFsr2AutoReactiveScale;
     generateReactiveParameters.cutoffThreshold = pState->fFsr2AutoReactiveThreshold;
+    generateReactiveParameters.binaryValue = pState->fFsr2AutoReactiveBinaryValue;
     generateReactiveParameters.flags =  (pState->bFsr2AutoReactiveTonemap ? FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_TONEMAP :0) |
                                         (pState->bFsr2AutoReactiveInverseTonemap ? FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_INVERSETONEMAP : 0) |
                                         (pState->bFsr2AutoReactiveThreshold ? FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_THRESHOLD : 0) |
@@ -174,8 +183,26 @@ void UpscaleContext_FSR2_API::Draw(ID3D12GraphicsCommandList* pCommandList, cons
     dispatchParameters.depth = ffxGetResourceDX12(&context, cameraSetup.depthbufferResource, L"FSR2_InputDepth");
     dispatchParameters.motionVectors = ffxGetResourceDX12(&context, cameraSetup.motionvectorResource, L"FSR2_InputMotionVectors");
     dispatchParameters.exposure = ffxGetResourceDX12(&context, nullptr, L"FSR2_InputExposure");
-    dispatchParameters.reactive = ffxGetResourceDX12(&context, cameraSetup.reactiveMapResource, L"FSR2_InputReactiveMap");
-    dispatchParameters.transparencyAndComposition = ffxGetResourceDX12(&context, cameraSetup.transparencyAndCompositionResource, L"FSR2_TransparencyAndCompositionMap");
+
+    if ((pState->nReactiveMaskMode == ReactiveMaskMode::REACTIVE_MASK_MODE_ON)
+        || (pState->nReactiveMaskMode == ReactiveMaskMode::REACTIVE_MASK_MODE_AUTOGEN))
+    {
+        dispatchParameters.reactive = ffxGetResourceDX12(&context, cameraSetup.reactiveMapResource, L"FSR2_InputReactiveMap");
+    }
+    else
+    {
+        dispatchParameters.reactive = ffxGetResourceDX12(&context, nullptr, L"FSR2_EmptyInputReactiveMap");
+    }
+
+    if (pState->bCompositionMask == true)
+    {
+        dispatchParameters.transparencyAndComposition = ffxGetResourceDX12(&context, cameraSetup.transparencyAndCompositionResource, L"FSR2_TransparencyAndCompositionMap");
+    }
+    else
+    {
+        dispatchParameters.transparencyAndComposition = ffxGetResourceDX12(&context, nullptr, L"FSR2_EmptyTransparencyAndCompositionMap");
+    }
+
     dispatchParameters.output = ffxGetResourceDX12(&context, cameraSetup.resolvedColorResource, L"FSR2_OutputUpscaledColor", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
     dispatchParameters.jitterOffset.x = m_JitterX;
     dispatchParameters.jitterOffset.y = m_JitterY;

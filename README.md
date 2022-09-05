@@ -1,4 +1,4 @@
-# FidelityFX Super Resolution 2.0.1 (FSR 2.0) 
+# FidelityFX Super Resolution 2.1 (FSR 2.1) 
 
 Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
 
@@ -21,11 +21,11 @@ THE SOFTWARE.
 
 ![Screenshot](screenshot.png)
 
-AMD FidelityFX Super Resolution 2.0 (FSR 2) is an open source, high-quality solution for producing high resolution frames from lower resolution inputs.
+AMD FidelityFX Super Resolution 2 (FSR 2) is an open source, high-quality solution for producing high resolution frames from lower resolution inputs.
 
 You can find the binaries for FidelityFX FSR in the release section on GitHub.
 
-# Super Resolution 2.0
+# Super Resolution 2
 
 ### Table of contents
 
@@ -50,6 +50,7 @@ You can find the binaries for FidelityFX FSR in the release section on GitHub.
     - [Camera jitter](#camera-jitter)
 	- [Camera jump cuts](#camera-jump-cuts)
     - [Mipmap biasing](#mipmap-biasing)
+    - [Frame Time Delta Input](#frame-time-delta-input)
     - [HDR support](#hdr-support)
     - [Falling back to 32bit floating point](#falling-back-to-32bit-floating-point)
     - [64-wide wavefronts](#64-wide-wavefronts)
@@ -63,12 +64,12 @@ You can find the binaries for FidelityFX FSR in the release section on GitHub.
     - [Reproject & accumulate](#reproject-accumulate)
     - [Robust Contrast Adaptive Sharpening (RCAS)](#robust-contrast-adaptive-sharpening-rcas)
 - [Building the sample](#building-the-sample)
+- [Limitations](#limitations)
 - [Version history](#version-history)
-- [Limitations](release_notes.txt)
 - [References](#references)
 
 # Introduction
-**FidelityFX Super Resolution 2.0** (or **FSR2** for short) is a cutting-edge upscaling technique developed from the ground up to produce high resolution frames from lower resolution inputs.
+**FidelityFX Super Resolution 2** (or **FSR2** for short) is a cutting-edge upscaling technique developed from the ground up to produce high resolution frames from lower resolution inputs.
 
 ![alt text](docs/media/super-resolution-temporal/overview.svg "A diagram showing the input resources to the super resolution (temporal) algorithm.")
 
@@ -100,19 +101,19 @@ To use FSR2 you should follow the steps below:
 
 8. Create a backend for your target API. E.g. for DirectX12 you should call [`ffxFsr2GetInterfaceDX12`](src/ffx-fsr2-api/dx12/ffx_fsr2_dx12.h#L55). A scratch buffer should be allocated of the size returned by calling [`ffxFsr2GetScratchMemorySizeDX12`](src/ffx-fsr2-api/dx12/ffx_fsr2_dx12.h#L40) and the pointer to that buffer passed to [`ffxFsr2GetInterfaceDX12`](src/ffx-fsr2-api/dx12/ffx_fsr2_dx12.h#L55).
 
-9. Create a FSR2 context by calling [`ffxFsr2ContextCreate`](src/ffx-fsr2-api/ffx_fsr2.h#L213). The parameters structure should be filled out matching the configuration of your application. See the API reference documentation for more details.
+9. Create a FSR2 context by calling [`ffxFsr2ContextCreate`](src/ffx-fsr2-api/ffx_fsr2.h#L215). The parameters structure should be filled out matching the configuration of your application. See the API reference documentation for more details.
 
-10. Each frame you should call [`ffxFsr2ContextDispatch`](src/ffx-fsr2-api/ffx_fsr2.h#L254) to launch FSR2 workloads. The parameters structure should be filled out matching the configuration of your application. See the API reference documentation for more details.
+10. Each frame you should call [`ffxFsr2ContextDispatch`](src/ffx-fsr2-api/ffx_fsr2.h#L256) to launch FSR2 workloads. The parameters structure should be filled out matching the configuration of your application. See the API reference documentation for more details, and ensure the [`frameTimeDelta` field is provided in milliseconds](#frame-time-delta-input).
 
-11. When your application is terminating (or you wish to destroy the context for another reason) you should call [`ffxFsr2ContextDestroy`](src/ffx-fsr2-api/ffx_fsr2.h#L277). The GPU should be idle before calling this function.
+11. When your application is terminating (or you wish to destroy the context for another reason) you should call [`ffxFsr2ContextDestroy`](src/ffx-fsr2-api/ffx_fsr2.h#L279). The GPU should be idle before calling this function.
 
-12. Sub-pixel jittering should be applied to your application's projection matrix. This should be done when performing the main rendering of your application. You should use the [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L422) function to compute the precise jitter offsets. See [Camera jitter](#camera-jitter) section for more details.
+12. Sub-pixel jittering should be applied to your application's projection matrix. This should be done when performing the main rendering of your application. You should use the [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L424) function to compute the precise jitter offsets. See [Camera jitter](#camera-jitter) section for more details.
 
-13. For the best upscaling quality it is strongly advised that you populate the [Reactive mask](#reactive-mask) and [Transparency & composition mask](#transparency-and-composition-mask) according to our guidelines. You can also use [`ffxFsr2ContextGenerateReactiveMask`](src/ffx-fsr2-api/ffx_fsr2.h#L265) as a starting point.
+13. For the best upscaling quality it is strongly advised that you populate the [Reactive mask](#reactive-mask) and [Transparency & composition mask](#transparency-and-composition-mask) according to our guidelines. You can also use [`ffxFsr2ContextGenerateReactiveMask`](src/ffx-fsr2-api/ffx_fsr2.h#L267) as a starting point.
 
 14. Applications should expose [scaling modes](#scaling-modes), in their user interface in the following order: Quality, Balanced, Performance, and (optionally) Ultra Performance.
 
-15. Applications should also expose a sharpening slider to allow end users to acheive additional quality.
+15. Applications should also expose a sharpening slider to allow end users to achieve additional quality.
 
 # Integration guidelines
 
@@ -131,24 +132,24 @@ We strongly recommend that applications adopt consistent naming and scaling rati
 ## Performance
 Depending on your target hardware and operating configuration FSR2 will operate at different performance levels.
 
-The table below summarizes the measured performance of FSR2 on a variety of hardware.
+The table below summarizes the measured performance of FSR2 on a variety of hardware in DX12.
 
 | Target resolution | Quality          | RX 6950 XT | RX 6900 XT | RX 6800 XT | RX 6800 | RX 6700 XT | RX 6600 XT | RX 5700 XT | RX Vega 56 | RX 590 |  
 |-------------------|------------------|------------|------------|------------|---------|------------|------------|------------|------------|--------|
-| 3840x2160         | Quality (1.5x)   | 1.1ms      | 1.2ms      | 1.3ms      | 1.6ms   | 1.8ms      | 3.0ms      | 2.4ms      | 3.7ms      | 5.6ms  |
-|                   | Balanced (1.7x)  | 1.0ms      | 1.1ms      | 1.1ms      | 1.4ms   | 1.7ms      | 2.7ms      | 2.2ms      | 3.3ms      | 5.3ms  |
-|                   | Performance (2x) | 0.9ms      | 1.0ms      | 1.0ms      | 1.4ms   | 1.5ms      | 2.3ms      | 2.0ms      | 3.1ms      | 4.9ms  |
-|                   | Ultra perf. (3x) | 0.8ms      | 0.9ms      | 0.9ms      | 1.2ms   | 1.4ms      | 1.8ms      | 1.7ms      | 2.7ms      | 4.3ms  |
-| 2560x1440         | Quality (1.5x)   | 0.5ms      | 0.5ms      | 0.5ms      | 0.7ms   | 0.8ms      | 1.2ms      | 1.0ms      | 1.6ms      | 2.5ms  |
-|                   | Balanced (1.7x)  | 0.4ms      | 0.5ms      | 0.5ms      | 0.6ms   | 0.8ms      | 1.0ms      | 1.0ms      | 1.5ms      | 2.4ms  |
-|                   | Performance (2x) | 0.4ms      | 0.4ms      | 0.4ms      | 0.5ms   | 0.7ms      | 0.9ms      | 0.9ms      | 1.4ms      | 2.2ms  |
-|                   | Ultra perf. (3x) | 0.3ms      | 0.4ms      | 0.4ms      | 0.5ms   | 0.6ms      | 0.8ms      | 0.7ms      | 1.2ms      | 1.9ms  |
-| 1920x1080         | Quality (1.5x)   | 0.3ms      | 0.3ms      | 0.3ms      | 0.3ms   | 0.5ms      | 0.6ms      | 0.6ms      | 0.9ms      | 1.4ms  |
-|                   | Balanced (1.7x)  | 0.2ms      | 0.2ms      | 0.3ms      | 0.3ms   | 0.4ms      | 0.6ms      | 0.5ms      | 0.8ms      | 1.3ms  |
-|                   | Performance (2x) | 0.2ms      | 0.2ms      | 0.2ms      | 0.3ms   | 0.4ms      | 0.5ms      | 0.5ms      | 0.8ms      | 1.3ms  |
-|                   | Ultra perf. (3x) | 0.2ms      | 0.2ms      | 0.2ms      | 0.3ms   | 0.4ms      | 0.4ms      | 0.4ms      | 0.7ms      | 1.1ms  |
+| 3840x2160         | Quality (1.5x)   | 1.1ms      | 1.2ms      | 1.2ms      | 1.3ms   | 1.8ms      | 3.0ms      | 2.4ms      | 4.8ms      | 5.3ms  |
+|                   | Balanced (1.7x)  | 1.0ms      | 1.0ms      | 1.1ms      | 1.2ms   | 1.6ms      | 2.7ms      | 2.1ms      | 4.3ms      | 4.8ms  |
+|                   | Performance (2x) | 0.8ms      | 0.9ms      | 0.9ms      | 1.1ms   | 1.5ms      | 2.3ms      | 1.9ms      | 3.5ms      | 4.2ms  |
+|                   | Ultra perf. (3x) | 0.7ms      | 0.7ms      | 0.7ms      | 1.0ms   | 1.3ms      | 1.7ms      | 1.6ms      | 2.8ms      | 3.5ms  |
+| 2560x1440         | Quality (1.5x)   | 0.4ms      | 0.4ms      | 0.5ms      | 0.6ms   | 0.8ms      | 1.2ms      | 1.0ms      | 1.8ms      | 2.3ms  |
+|                   | Balanced (1.7x)  | 0.4ms      | 0.4ms      | 0.4ms      | 0.5ms   | 0.7ms      | 1.0ms      | 0.9ms      | 1.7ms      | 2.1ms  |
+|                   | Performance (2x) | 0.4ms      | 0.4ms      | 0.4ms      | 0.5ms   | 0.7ms      | 0.9ms      | 0.8ms      | 1.4ms      | 1.9ms  |
+|                   | Ultra perf. (3x) | 0.3ms      | 0.3ms      | 0.3ms      | 0.4ms   | 0.6ms      | 0.7ms      | 0.7ms      | 1.2ms      | 1.6ms  |
+| 1920x1080         | Quality (1.5x)   | 0.3ms      | 0.3ms      | 0.3ms      | 0.3ms   | 0.4ms      | 0.6ms      | 0.6ms      | 1.0ms      | 1.3ms  |
+|                   | Balanced (1.7x)  | 0.2ms      | 0.2ms      | 0.2ms      | 0.3ms   | 0.4ms      | 0.6ms      | 0.5ms      | 0.9ms      | 1.2ms  |
+|                   | Performance (2x) | 0.2ms      | 0.2ms      | 0.2ms      | 0.3ms   | 0.4ms      | 0.5ms      | 0.5ms      | 0.8ms      | 1.1ms  |
+|                   | Ultra perf. (3x) | 0.2ms      | 0.2ms      | 0.2ms      | 0.2ms   | 0.3ms      | 0.4ms      | 0.4ms      | 0.7ms      | 0.9ms  |
 
-Figures are rounded to the nearest 0.1ms and are without [`enableSharpening`](src/ffx-fsr2-api/ffx_fsr2.h#L127) set.
+Figures are rounded to the nearest 0.1ms and are without additional [`sharpness`](src/ffx-fsr2-api/ffx_fsr2.h#L129).
 
 ## Memory requirements
 Using FSR2 requires some additional GPU local memory to be allocated for consumption by the GPU. When using the FSR2 API, this memory is allocated when the FSR2 context is created, and is done so via the series of callbacks which comprise the backend interface. This memory is used to store intermediate surfaces which are computed by the FSR2 algorithm as well as surfaces which are persistent across many frames of the application. The table below includes the amount of memory used by FSR2 under various operating conditions. The "Working set" column indicates the total amount of memory used by FSR2 as the algorithm is executing on the GPU; this is the amount of memory FSR2 will require to run. The "Persistent memory" column indicates how much of the "Working set" column is required to be left intact for subsequent frames of the application; this memory stores the temporal data consumed by FSR2. The "Aliasable memory" column indicates how much of the "Working set" column may be aliased by surfaces or other resources used by the application outside of the operating boundaries of FSR2.
@@ -157,41 +158,43 @@ You can take control of resource creation in FSR2 by overriding the resource cre
 
 | Resolution | Quality                | Working set (MB) | Persistent memory (MB) | Aliasable memory (MB)   |  
 | -----------|------------------------|------------------|------------------------|-------------------------|
-| 3840x2160  | Quality (1.5x)         | 293.53MB         | 94.92MB                | 198.61MB                |
-|            | Balanced (1.7x)        | 274.03MB         | 94.92MB                | 179.11MB                |
-|            | Performance (2x)       | 255.68MB         | 94.92MB                | 160.76MB                |
-|            | Ultra performance (3x) | 227.11MB         | 94.92MB                | 132.19MB                |
-| 2560x1440  | Quality (1.5x)         | 136.41MB         | 84.37MB                | 52.04MB                 |
-|            | Balanced (1.7x)        | 126.97MB         | 84.37MB                | 42.60MB                 |
-|            | Performance (2x)       | 117.53MB         | 84.37MB                | 33.16MB                 |
-|            | Ultra performance (3x) | 104.95MB         | 84.37MB                | 20.58MB                 |
-| 1920x1080  | Quality (1.5x)         | 76.46MB          | 47.46MB                | 29.18MB                 | 
-|            | Balanced (1.7x)        | 71.75MB          | 47.46MB                | 23.68MB                 |
-|            | Performance (2x)       | 67.81MB          | 47.46MB                | 20.79MB                 |
-|            | Ultra performance (3x) | 58.38MB          | 47.46MB                | 11.09MB                 |
+| 3840x2160  | Quality (1.5x)         | 302MB            | 218MB                  | 85MB                    |
+|            | Balanced (1.7x)        | 279MB            | 214MB                  | 65MB                    |
+|            | Performance (2x)       | 260MB            | 211MB                  | 49MB                    |
+|            | Ultra performance (3x) | 228MB            | 206MB                  | 22MB                    |
+| 2560x1440  | Quality (1.5x)         | 140MB            | 100MB                  | 40MB                    |
+|            | Balanced (1.7x)        | 129MB            | 98MB                   | 33MB                    |
+|            | Performance (2x)       | 119MB            | 97MB                   | 24MB                    |
+|            | Ultra performance (3x) | 105MB            | 95MB                   | 10MB                    |
+| 1920x1080  | Quality (1.5x)         | 78MB             | 56MB                   | 22MB                    |
+|            | Balanced (1.7x)        | 73MB             | 55MB                   | 18MB                    |
+|            | Performance (2x)       | 69MB             | 54MB                   | 15MB                    |
+|            | Ultra performance (3x) | 59MB             | 53MB                   | 6MB                     |
+
+Figures are rounded up to nearest MB and are without additional [`sharpness`](src/ffx-fsr2-api/ffx_fsr2.h#L129). Figures are approximations using an RX 6700XT GPU in DX12 and are subject to change.
 
 For details on how to manage FSR2's memory requirements please refer to the section of this document dealing with [Memory management](#memory-management).
 
 ## Input resources
 FSR2 is a temporal algorithm, and therefore requires access to data from both the current and previous frame. The following table enumerates all external inputs required by FSR2.
 
-> The resolution column indicates if the data should be at 'rendered' resolution or 'presentation' resolution. 'Rendered' resolution indicates that the resource should match the resolution at which the application is performing its rendering. Conversely, 'presentation' indicates that the resolution of the target should match that which is to be presented to the user. All resources are from the current rendered frame, for DirectX(R)12 and Vulkan(R) applications all input resources should be transitioned to [`D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE`](https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resource_states) and [`VK_ACCESS_SHADER_READ_BIT`](https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkAccessFlagBits.html) respectively before calling [`ffxFsr2ContextDispatch`](src/ffx-fsr2-api/ffx_fsr2.h#L254).
+> The resolution column indicates if the data should be at 'rendered' resolution or 'presentation' resolution. 'Rendered' resolution indicates that the resource should match the resolution at which the application is performing its rendering. Conversely, 'presentation' indicates that the resolution of the target should match that which is to be presented to the user. All resources are from the current rendered frame, for DirectX(R)12 and Vulkan(R) applications all input resources should be transitioned to [`D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE`](https://docs.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_resource_states) and [`VK_ACCESS_SHADER_READ_BIT`](https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkAccessFlagBits.html) respectively before calling [`ffxFsr2ContextDispatch`](src/ffx-fsr2-api/ffx_fsr2.h#L256).
 
 | Name            | Resolution                   |  Format                            | Type      | Notes                                          |  
 | ----------------|------------------------------|------------------------------------|-----------|------------------------------------------------|
-| Color buffer    | Render                       | `APPLICATION SPECIFIED`            | Texture   | The render resolution color buffer for the current frame provided by the application. If the contents of the color buffer are in high dynamic range (HDR), then the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L87) flag should be set in  the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure. |
-| Depth buffer    | Render                       | `APPLICATION SPECIFIED (1x FLOAT)` | Texture   | The render resolution depth buffer for the current frame provided by the application. The data should be provided as a single floating point value, the precision of which is under the application's control. The configuration of the depth should be communicated to FSR2 via the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164). You should set the [`FFX_FSR2_ENABLE_DEPTH_INVERTED`](src/ffx-fsr2-api/ffx_fsr2.h#L90) flag if your depth buffer is inverted (that is [1..0] range), and you should set the [`FFX_FSR2_ENABLE_DEPTH_INFINITE`](src/ffx-fsr2-api/ffx_fsr2.h#L91) flag if your depth buffer has an infinite far plane. If the application provides the depth buffer in `D32S8` format, then FSR2 will ignore the stencil component of the buffer, and create an `R32_FLOAT` resource to address the depth buffer. On GCN and RDNA hardware, depth buffers are stored separately from stencil buffers. |
-| Motion vectors  | Render or presentation       | `APPLICATION SPECIFIED (2x FLOAT)` | Texture   | The 2D motion vectors for the current frame provided by the application in [**(<-width, -height>**..**<width, height>**] range. If your application renders motion vectors with a different range, you may use the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L125) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure to adjust them to match the expected range for FSR2. Internally, FSR2 uses 16-bit quantities to represent motion vectors in many cases, which means that while motion vectors with greater precision can be provided, FSR2 will not benefit from the increased precision. The resolution of the motion vector buffer should be equal to the render resolution, unless the [`FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS`](src/ffx-fsr2-api/ffx_fsr2.h#L88) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164), in which case it should be equal to the presentation resolution. |
+| Color buffer    | Render                       | `APPLICATION SPECIFIED`            | Texture   | The render resolution color buffer for the current frame provided by the application. If the contents of the color buffer are in high dynamic range (HDR), then the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L88) flag should be set in  the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure. |
+| Depth buffer    | Render                       | `APPLICATION SPECIFIED (1x FLOAT)` | Texture   | The render resolution depth buffer for the current frame provided by the application. The data should be provided as a single floating point value, the precision of which is under the application's control. The configuration of the depth should be communicated to FSR2 via the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166). You should set the [`FFX_FSR2_ENABLE_DEPTH_INVERTED`](src/ffx-fsr2-api/ffx_fsr2.h#L91) flag if your depth buffer is inverted (that is [1..0] range), and you should set the [`FFX_FSR2_ENABLE_DEPTH_INFINITE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) flag if your depth buffer has an infinite far plane. If the application provides the depth buffer in `D32S8` format, then FSR2 will ignore the stencil component of the buffer, and create an `R32_FLOAT` resource to address the depth buffer. On GCN and RDNA hardware, depth buffers are stored separately from stencil buffers. |
+| Motion vectors  | Render or presentation       | `APPLICATION SPECIFIED (2x FLOAT)` | Texture   | The 2D motion vectors for the current frame provided by the application in [**(<-width, -height>**..**<width, height>**] range. If your application renders motion vectors with a different range, you may use the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L126) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure to adjust them to match the expected range for FSR2. Internally, FSR2 uses 16-bit quantities to represent motion vectors in many cases, which means that while motion vectors with greater precision can be provided, FSR2 will not benefit from the increased precision. The resolution of the motion vector buffer should be equal to the render resolution, unless the [`FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS`](src/ffx-fsr2-api/ffx_fsr2.h#L89) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166), in which case it should be equal to the presentation resolution. |
 | Reactive mask   | Render                       | `R8_UNORM`                         | Texture   | As some areas of a rendered image do not leave a footprint in the depth buffer or include motion vectors, FSR2 provides support for a reactive mask texture which can be used to indicate to FSR2 where such areas are. Good examples of these are particles, or alpha-blended objects which do not write depth or motion vectors. If this resource is not set, then FSR2's shading change detection logic will handle these cases as best it can, but for optimal results, this resource should be set. For more information on the reactive mask please refer to the [Reactive mask](#reactive-mask) section.  |
-| Exposure        | 1x1                          | `R32_FLOAT`                        | Texture   | A 1x1 texture containing the exposure value computed for the current frame. This resource is optional, and may be omitted if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164).  |
+| Exposure        | 1x1                          | `R32_FLOAT`                        | Texture   | A 1x1 texture containing the exposure value computed for the current frame. This resource is optional, and may be omitted if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L93) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166).  |
 
 ## Depth buffer configurations
 It is strongly recommended that an inverted, infinite depth buffer is used with FSR2. However, alternative depth buffer configurations are supported. An application should inform the FSR2 API of its depth buffer configuration by setting the appropriate flags during the creation of the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164). The table below contains the appropriate flags.
 
 | FSR2 flag                        | Note                                                                                       |
 |----------------------------------|--------------------------------------------------------------------------------------------|
-| [`FFX_FSR2_ENABLE_DEPTH_INVERTED`](src/ffx-fsr2-api/ffx_fsr2.h#L90) | A bit indicating that the input depth buffer data provided is inverted [max..0].           |
-| [`FFX_FSR2_ENABLE_DEPTH_INFINITE`](src/ffx-fsr2-api/ffx_fsr2.h#L91) | A bit indicating that the input depth buffer data provided is using an infinite far plane. |
+| [`FFX_FSR2_ENABLE_DEPTH_INVERTED`](src/ffx-fsr2-api/ffx_fsr2.h#L91) | A bit indicating that the input depth buffer data provided is inverted [max..0].           |
+| [`FFX_FSR2_ENABLE_DEPTH_INFINITE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) | A bit indicating that the input depth buffer data provided is using an infinite far plane. |
 
 
 ## Providing motion vectors
@@ -201,11 +204,11 @@ A key part of a temporal algorithm (be it antialiasing or upscaling) is the prov
 
 ![alt text](docs/media/super-resolution-temporal/motion-vectors.svg "A diagram showing a 2D motion vector.")
 
-If your application computes motion vectors in another space - for example normalized device coordinate space - then you may use the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L125) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure to instruct FSR2 to adjust them to match the expected range for FSR2. The code examples below illustrate how motion vectors may be scaled to screen space. The example HLSL and C++ code below illustrates how NDC-space motion vectors can be scaled using the FSR2 host API.
+If your application computes motion vectors in another space - for example normalized device coordinate space - then you may use the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L126) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure to instruct FSR2 to adjust them to match the expected range for FSR2. The code examples below illustrate how motion vectors may be scaled to screen space. The example HLSL and C++ code below illustrates how NDC-space motion vectors can be scaled using the FSR2 host API.
 
 ```HLSL
 // GPU: Example of application NDC motion vector computation
-float2 motionVector = (currentPosition.xy / currentPosition.w) - (previousPosition.xy / previousPosition.w);
+float2 motionVector = (previousPosition.xy / previousPosition.w) - (currentPosition.xy / currentPosition.w);
 
 // CPU: Matching FSR 2.0 motionVectorScale configuration
 dispatchParameters.motionVectorScale.x = (float)renderWidth;
@@ -213,43 +216,45 @@ dispatchParameters.motionVectorScale.y = (float)renderHeight;
 ```
 
 ### Precision & resolution
-Internally, FSR2 uses 16bit quantities to represent motion vectors in many cases, which means that while motion vectors with greater precision can be provided, FSR2 will not currently benefit from the increased precision. The resolution of the motion vector buffer should be equal to the render resolution, unless the [`FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS`](src/ffx-fsr2-api/ffx_fsr2.h#L88) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164), in which case it should be equal to the presentation resolution.
+Internally, FSR2 uses 16bit quantities to represent motion vectors in many cases, which means that while motion vectors with greater precision can be provided, FSR2 will not currently benefit from the increased precision. The resolution of the motion vector buffer should be equal to the render resolution, unless the [`FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS`](src/ffx-fsr2-api/ffx_fsr2.h#L89) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166), in which case it should be equal to the presentation resolution.
 
 ### Coverage
 FSR2 will perform better quality upscaling when more objects provide their motion vectors. It is therefore advised that all opaque, alpha-tested and alpha-blended objects should write their motion vectors for all covered pixels. If vertex shader effects are applied - such as scrolling UVs - these calculations should also be factored into the calculation of motion for the best results. For alpha-blended objects it is also strongly advised that the alpha value of each covered pixel is stored to the corresponding pixel in the [reactive mask](#reactive-mask). This will allow FSR2 to perform better handling of alpha-blended objects during upscaling. The reactive mask is especially important for alpha-blended objects where writing motion vectors might be prohibitive, such as particles.
 
 ## Reactive mask
-In the context of FSR2, the term "reactivity" means how much influence the samples rendered for the current frame have over the production of the final upscaled image. Typically, samples rendered for the current frame contribute a relatively modest amount to the result computed by FSR2; however, there are exceptions. To produce the best results for fast moving, alpha-blended objects, FSR2 requires the [Reproject & accumulate](#reproject-accumulate) stage to become more reactive for such pixels. As there is no good way to determine from either color, depth or motion vectors which pixels have been rendered using alpha blending, FSR2 performs best when applications explicity mark such areas.
+In the context of FSR2, the term "reactivity" means how much influence the samples rendered for the current frame have over the production of the final upscaled image. Typically, samples rendered for the current frame contribute a relatively modest amount to the result computed by FSR2; however, there are exceptions. To produce the best results for fast moving, alpha-blended objects, FSR2 requires the [Reproject & accumulate](#reproject-accumulate) stage to become more reactive for such pixels. As there is no good way to determine from either color, depth or motion vectors which pixels have been rendered using alpha blending, FSR2 performs best when applications explicitly mark such areas.
 
 Therefore, it is strongly encouraged that applications provide a reactive mask to FSR2. The reactive mask guides FSR2 on where it should reduce its reliance on historical information when compositing the current pixel, and instead allow the current frame's samples to contribute more to the final result. The reactive mask allows the application to provide a value from [0..1] where 0 indicates that the pixel is not at all reactive (and should use the default FSR2 composition strategy), and a value of 1 indicates the pixel should be fully reactive. 
 
 While there are other applications for the reactive mask, the primary application for the reactive mask is producing better results of upscaling images which include alpha-blended objects. A good proxy for reactiveness is actually the alpha value used when compositing an alpha-blended object into the scene, therefore, applications should write `alpha` to the reactive mask. It should be noted that it is unlikely that a reactive value of close to 1 will ever produce good results. Therefore, we recommend clamping the maximum reactive value to around 0.9.
 
-If a [Reactive mask](#reactive-mask) is not provided to FSR2 (by setting the [`reactive`](src/ffx-fsr2-api/ffx_fsr2.h#L121) field of [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) to `NULL`) then an internally generated 1x1 texture with a cleared reactive value will be used.
+If a [Reactive mask](#reactive-mask) is not provided to FSR2 (by setting the [`reactive`](src/ffx-fsr2-api/ffx_fsr2.h#L122) field of [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) to `NULL`) then an internally generated 1x1 texture with a cleared reactive value will be used.
 
 ## Transparency & composition mask
 In addition to the [Reactive mask](#reactive-mask), FSR2 provides for the application to denote areas of other specialist rendering which should be accounted for during the upscaling process. Examples of such special rendering include areas of raytraced reflections or animated textures.
 
 While the [Reactive mask](#reactive-mask) adjusts the accumulation balance, the [Transparency & composition mask](#transparency-and-composition-mask) adjusts the pixel locks created by FSR2. A pixel with a value of 0 in the [Transparency & composition mask](#ttransparency-and-composition-mask) does not perform any additional modification to the lock for that pixel. Conversely, a value of 1 denotes that the lock for that pixel should be completely removed.
 
-If a [Transparency & composition mask](#transparency-and-composition-mask) is not provided to FSR2 (by setting the [`transparencyAndComposition`](#src/ffx-fsr2-api/ffx_fsr2.h#L122) field of [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) to `NULL`) then an internally generated 1x1 texture with a cleared transparency and composition value will be used.
+If a [Transparency & composition mask](#transparency-and-composition-mask) is not provided to FSR2 (by setting the [`transparencyAndComposition`](#src/ffx-fsr2-api/ffx_fsr2.h#L123) field of [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) to `NULL`) then an internally generated 1x1 texture with a cleared transparency and composition value will be used.
 
 ## Automatically generating reactivity
 To help applications generate the [Reactive mask](#reactive-mask) and the [Transparency & composition mask](#transparency-and-composition-mask), FSR2 provides an optional helper API. Under the hood, the API launches a compute shader which computes these values for each pixel using a luminance-based heuristic.
 
-Applications wishing to do this can call the [`ffxFsr2ContextGenerateReactiveMask`](src/ffx-fsr2-api/ffx_fsr2.h#L265) function and should pass two versions of the color buffer, one containing opaque only geometry, and the other containing both opaque and alpha-blended objects.
+Applications wishing to do this can call the [`ffxFsr2ContextGenerateReactiveMask`](src/ffx-fsr2-api/ffx_fsr2.h#L267) function and should pass two versions of the color buffer, one containing opaque only geometry, and the other containing both opaque and alpha-blended objects.
+
+In version 2.1, this helper changed slightly in order to give developers more options when items such as decals were used, which may have resulted in shimmer on certain surfaces. A "binaryValue" can now be set in the FfxFsr2GenerateReactiveDescription struct, to provide a specific value to be written into the reactive mask instead of 1.0f, which can be too high.
 
 ## Exposure
 FSR2 provides two values which control the exposure used when performing upscaling. They are as follows:
 
 1. **Pre-exposure** a value by which we divide the input signal to get back to the original signal produced by the game before any packing into lower precision render targets.
-2. **Expsoure** a value which is multiplied against the result of the pre-exposed color value.
+2. **Exposure** a value which is multiplied against the result of the pre-exposed color value.
 
 The exposure value should match that which the application uses during any subsequent tonemapping passes performed by the application. This means FSR2 will operate consistently with what is likely to be visible in the final tonemapped image. 
 
 > In various stages of the FSR2 algorithm described in this document, FSR2 will compute its own exposure value for internal use. It is worth noting that all outputs from FSR2 will have this internal tonemapping reversed before the final output is written. Meaning that FSR2 returns results in the same domain as the original input signal.
 
-Poorly selected exposure values can have a drastic impact on the final quality of FSR2's upscaling. Therefore, it is recommended that [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) is used by the application, unless there is a particular reason not to. When [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure, the exposure calculation shown in the HLSL code below is used to compute the exposure value, this matches the exposure response of ISO 100 film stock.
+Poorly selected exposure values can have a drastic impact on the final quality of FSR2's upscaling. Therefore, it is recommended that [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L93) is used by the application, unless there is a particular reason not to. When [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L93) is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure, the exposure calculation shown in the HLSL code below is used to compute the exposure value, this matches the exposure response of ISO 100 film stock.
 
 ```HLSL
 float ComputeAutoExposureFromAverageLog(float averageLogLuminance)
@@ -274,7 +279,7 @@ With any image upscaling approach is it important to understand how to place oth
 | Post processing A              | Post processing B    |
 |--------------------------------|----------------------|
 | Screenspace reflections        | Film grain           |
-| Screenspace ambient occlusion  | Chromatic abberation | 
+| Screenspace ambient occlusion  | Chromatic aberration |
 | Denoisers (shadow, reflections)| Vignette             |
 | Exposure (optional)            | Tonemapping          |
 |                                | Bloom                |
@@ -327,7 +332,7 @@ Out of the box, the FSR2 API will compile into multiple libraries following the 
 ## Memory management
 If the FSR2 API is used with one of the supplied backends (e.g: DirectX(R)12 or Vulkan(R)) then all the resources required by FSR2 are created as committed resources directly using the graphics device provided by the host application. However, by overriding the create and destroy family of functions present in the backend interface it is possible for an application to more precisely control the memory management of FSR2.
 
-To do this, you can either provide a full custom backend to FSR2 via the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure passed to [`ffxFsr2ContextCreate`](src/ffx-fsr2-api/ffx_fsr2.h#L213) function, or you can retrieve the backend for your desired API and override the resource creation and destruction functions to handle them yourself. To do this, simply overwrite the [`fpCreateResource`](src/ffx-fsr2-api/ffx_fsr2_interface.h#L399) and [`fpDestroyResource`](src/ffx-fsr2-api/ffx_fsr2_interface.h#L403) function pointers.
+To do this, you can either provide a full custom backend to FSR2 via the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure passed to [`ffxFsr2ContextCreate`](src/ffx-fsr2-api/ffx_fsr2.h#L215) function, or you can retrieve the backend for your desired API and override the resource creation and destruction functions to handle them yourself. To do this, simply overwrite the [`fpCreateResource`](src/ffx-fsr2-api/ffx_fsr2_interface.h#L360) and [`fpDestroyResource`](src/ffx-fsr2-api/ffx_fsr2_interface.h#L364) function pointers.
 
 ``` CPP
 // Setup DX12 interface.
@@ -372,7 +377,7 @@ Internally, these function implement a Halton[2,3] sequence [[Halton](#reference
 
 ![alt text](docs/media/super-resolution-temporal/jitter-space.svg "A diagram showing how to map sub-pixel jitter offsets to projection offsets.")
 
-It is important to understand that the values returned from the [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L422) are in unit pixel space, and in order to composite this correctly into a projection matrix we must convert them into projection offsets. The diagram above shows a single pixel in unit pixel space, and in projection space. The code listing below shows how to correctly composite the sub-pixel jitter offset value into a projection matrix.
+It is important to understand that the values returned from the [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L424) are in unit pixel space, and in order to composite this correctly into a projection matrix we must convert them into projection offsets. The diagram above shows a single pixel in unit pixel space, and in projection space. The code listing below shows how to correctly composite the sub-pixel jitter offset value into a projection matrix.
 
 ``` CPP
 const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(renderWidth, displayWidth);
@@ -390,7 +395,7 @@ const Matrix4 jitteredProjectionMatrix = jitterTranslationMatrix * projectionMat
 
 Jitter should be applied to *all* rendering. This includes opaque, alpha transparent, and raytraced objects. For rasterized objects, the sub-pixel jittering values calculated by the [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L422) function can be applied to the camera projection matrix which is ultimately used to perform transformations during vertex shading. For raytraced rendering, the sub-pixel jitter should be applied to the ray's origin - often the camera's position.
 
-Whether you elect to use the recommended [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L422) function or your own sequence generator, you must set the [`jitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L124) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure to inform FSR2 of the jitter offset that has been applied in order to render each frame. Moreover, if not using the recommended [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L422) function, care should be taken that your jitter sequence never generates a null vector; that is value of 0 in both the X and Y dimensions.
+Whether you elect to use the recommended [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L424) function or your own sequence generator, you must set the [`jitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L125) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure to inform FSR2 of the jitter offset that has been applied in order to render each frame. Moreover, if not using the recommended [`ffxFsr2GetJitterOffset`](src/ffx-fsr2-api/ffx_fsr2.h#L424) function, care should be taken that your jitter sequence never generates a null vector; that is value of 0 in both the X and Y dimensions.
 
 The table below shows the jitter sequence length for each of the default quality modes.
 
@@ -403,7 +408,7 @@ The table below shows the jitter sequence length for each of the default quality
  | Custom            | [1..n]x (per dimension) | `ceil(8 * n^2)` |
 
 ## Camera jump cuts
-Most applications with real-time rendering have a large degree of temporal consistency between any two consecutive frames. However, there are cases where a change to a camera's transformation might cause an abrupt change in what is rendered. In such cases, FSR2 is unlikely to be able to reuse any data it has accumulated from previous frames, and should clear this data such to exclude it from consideration in the compositing process. In order to indicate to FSR2 that a jump cut has occurred with the camera you should set the [`reset`](src/ffx-fsr2-api/ffx_fsr2.h#L131) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure to `true` for the first frame of the discontinuous camera transformation.
+Most applications with real-time rendering have a large degree of temporal consistency between any two consecutive frames. However, there are cases where a change to a camera's transformation might cause an abrupt change in what is rendered. In such cases, FSR2 is unlikely to be able to reuse any data it has accumulated from previous frames, and should clear this data such to exclude it from consideration in the compositing process. In order to indicate to FSR2 that a jump cut has occurred with the camera you should set the [`reset`](src/ffx-fsr2-api/ffx_fsr2.h#L132) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure to `true` for the first frame of the discontinuous camera transformation.
 
 Rendering performance may be slightly less than typical frame-to-frame operation when using the reset flag, as FSR2 will clear some additional internal resources.
 
@@ -425,8 +430,13 @@ The following table illustrates the mipmap biasing factor which results from eva
  | Performance       | 2.0X (per dimension)  | -2.0        |
  | Ultra performance | 3.0X (per dimension)  | -2.58       |
 
+## Frame Time Delta Input
+The FSR2 API requires [`frameTimeDelta`](src/ffx-fsr2-api/ffx_fsr2.h#L130) be provided by the application through the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure. This value is in __milliseconds__: if running at 60fps, the value passed should be around __16.6f__.
+
+The value is used within the temporal component of the FSR 2 auto-exposure feature. This allows for tuning of the history accumulation for quality purposes.
+
 ## HDR support
-High dynamic range images are supported in FSR2. To enable this, you should set the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L87) bit in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure. Images should be provided to FSR2 in linear color space.
+High dynamic range images are supported in FSR2. To enable this, you should set the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L88) bit in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure. Images should be provided to FSR2 in linear color space.
 
 > Support for additional color spaces might be provided in a future revision of FSR2.
 
@@ -473,7 +483,7 @@ Each pass stage of the algorithm is laid out in the sections following this one,
 The compute luminance pyramid stage has two responsibilities:
 
 1. To produce a lower resolution version of the input color's luminance. This is used by shading change detection in the accumulation pass.
-2. To produce a 1x1 exposure texture which is optionally used by the exposure calculations of the [Adjust input color](#adjust-input-color) stage to apply tonemapping, and the [Reproject & Accumulate](#project-and-accumulate) stage for reversing local tonemapping ahead of producing an ouput from FSR2.
+2. To produce a 1x1 exposure texture which is optionally used by the exposure calculations of the [Adjust input color](#adjust-input-color) stage to apply tonemapping, and the [Reproject & Accumulate](#project-and-accumulate) stage for reversing local tonemapping ahead of producing an output from FSR2.
 
 
 ### Resource inputs
@@ -483,7 +493,7 @@ The following table contains all resources consumed by the [Compute luminance py
 
 | Name            | Temporal layer  | Resolution   |  Format                 | Type      | Notes                                        |  
 | ----------------|-----------------|--------------|-------------------------|-----------|----------------------------------------------|
-| Color buffer    | Current frame   | Render       | `APPLICATION SPECIFIED` | Texture   | The render resolution color buffer for the current frame provided by the application. If the contents of the color buffer are in high dynamic range (HDR), then the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L87) flag should be set in  the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure. |
+| Color buffer    | Current frame   | Render       | `APPLICATION SPECIFIED` | Texture   | The render resolution color buffer for the current frame provided by the application. If the contents of the color buffer are in high dynamic range (HDR), then the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L87) flag should be set in  the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure. |
 
 ### Resource outputs
 The following table contains all resources produced or modified by the [Compute luminance pyramid](#compute-luminance-pyramid) stage.
@@ -492,11 +502,11 @@ The following table contains all resources produced or modified by the [Compute 
 
 | Name                        | Temporal layer  | Resolution       |  Format                 | Type      | Notes                                        |  
 | ----------------------------|-----------------|------------------|-------------------------|-----------|----------------------------------------------|
-| Exposure                    | Current frame   | 1x1              | `R32_FLOAT`             | Texture   | A 1x1 texture containing the exposure value computed for the current frame. This resource is optional, and may be omitted if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164).  |
+| Exposure                    | Current frame   | 1x1              | `R32_FLOAT`             | Texture   | A 1x1 texture containing the exposure value computed for the current frame. This resource is optional, and may be omitted if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166).  |
 | Current luminance           | Current frame   | `Render * 0.5`   | `R16_FLOAT`             | Texture   | A texture at 50% of render resolution texture which contains the luminance of the current frame. |
 
 ### Description
-The [Compute luminance pyramid](#compute-luminance-pyramid) stage is implemented using FidelityFX [Single Pass Downsampler](single-pass-downsampler.md), an optimized technique for producing mipmap chains using a single compute shader dispatch. Instead of the conventional (full) pyramidal approach, SPD provides a mechanism to produce a specific set of mipmap levels for an arbitrary input texture, as well as performing arbitrary calculations on that data as we store it to the target location in memory. In FSR2, we are interested in producing in upto two intermediate resources depending on the configuration of the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164). The first resource is a low-resolution representation of the current luminance, this is used later in FSR2 to attempt to detect shading changes. The second is the exposure value, and while it is always computed, it is only used by subsequent stages if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure upon context creation. The exposure value - either from the application, or the [Compute luminance pyramid](#compute-luminance-pyramid) stage - is used in the [Adjust input color](#adjust-input-color) stage of FSR2, as well as by the [Reproject & Accumulate](#project-and-accumulate) stage.
+The [Compute luminance pyramid](#compute-luminance-pyramid) stage is implemented using FidelityFX [Single Pass Downsampler](single-pass-downsampler.md), an optimized technique for producing mipmap chains using a single compute shader dispatch. Instead of the conventional (full) pyramidal approach, SPD provides a mechanism to produce a specific set of mipmap levels for an arbitrary input texture, as well as performing arbitrary calculations on that data as we store it to the target location in memory. In FSR2, we are interested in producing in upto two intermediate resources depending on the configuration of the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166). The first resource is a low-resolution representation of the current luminance, this is used later in FSR2 to attempt to detect shading changes. The second is the exposure value, and while it is always computed, it is only used by subsequent stages if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L93) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure upon context creation. The exposure value - either from the application, or the [Compute luminance pyramid](#compute-luminance-pyramid) stage - is used in the [Adjust input color](#adjust-input-color) stage of FSR2, as well as by the [Reproject & Accumulate](#project-and-accumulate) stage.
 
 ![alt text](docs/media/super-resolution-temporal/auto-exposure.svg "A diagram showing the mipmap levels written by auto-exposure.")
 
@@ -542,8 +552,8 @@ The following table contains all resources consumed by the [Adjust input color](
 
 | Name            | Temporal layer  | Resolution   |  Format                   | Type      | Notes                                        |  
 | ----------------|-----------------|--------------|---------------------------|-----------|----------------------------------------------|
-| Color buffer    | Current frame   | Render       | `APPLICATION SPECIFIED`   | Texture   | The render resolution color buffer for the current frame provided by the application. If the contents of the color buffer are in high dynamic range (HDR), then the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L87) flag should be set in  the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure. |
-| Exposure        | Current frame   | 1x1          | ``R32_FLOAT``             | Texture   | A 1x1 texture containing the exposure value computed for the current frame. This resource can be supplied by the application, or computed by the [Compute luminance pyramid](#compute-luminance-pyramid) stage of FSR2 if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L92) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure.  |
+| Color buffer    | Current frame   | Render       | `APPLICATION SPECIFIED`   | Texture   | The render resolution color buffer for the current frame provided by the application. If the contents of the color buffer are in high dynamic range (HDR), then the [`FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE`](src/ffx-fsr2-api/ffx_fsr2.h#L88) flag should be set in  the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure. |
+| Exposure        | Current frame   | 1x1          | ``R32_FLOAT``             | Texture   | A 1x1 texture containing the exposure value computed for the current frame. This resource can be supplied by the application, or computed by the [Compute luminance pyramid](#compute-luminance-pyramid) stage of FSR2 if the [`FFX_FSR2_ENABLE_AUTO_EXPOSURE`](src/ffx-fsr2-api/ffx_fsr2.h#L93) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure.  |
 
 ### Resource outputs
 The following table contains all resources produced or modified by the [Adjust input color](#Adjust-input-color) stage.
@@ -567,7 +577,7 @@ As the luminance buffer is persistent (it is not available for aliasing, or clea
 | Green   | n-2                                             | n - 1                                         |
 | Blue    | n-3                                             | n - 2                                         |
 
-The alpha channel of the luminance history buffer contains a measure of the stability of the luminance over the currrent frame, and the three frames that came before it. This is computed in the following way:
+The alpha channel of the luminance history buffer contains a measure of the stability of the luminance over the current frame, and the three frames that came before it. This is computed in the following way:
 
 ``` HLSL
 float stabilityValue = 1.0f;
@@ -592,8 +602,8 @@ The following table contains all of the resources which are required by the reco
 
 | Name                        |  Temporal layer | Resolution |  Format                            | Type      | Notes                                          |  
 | ----------------------------|-----------------|------------|------------------------------------|-----------|------------------------------------------------|
-| Depth buffer                | Current frame   | Render     | `APPLICATION SPECIFIED (1x FLOAT)` | Texture   | The render resolution depth buffer for the current frame provided by the application. The data should be provided as a single floating point value, the precision of which is under the application's control. The configuration of the depth should be communicated to FSR2 via the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164). You should set the [`FFX_FSR2_ENABLE_DEPTH_INVERTED`](src/ffx-fsr2-api/ffx_fsr2.h#L90) flag if your depth buffer is inverted (that is [1..0] range), and you should set the  flag if your depth buffer has as infinite far plane. If the application provides the depth buffer in `D32S8` format, then FSR2 will ignore the stencil component of the buffer, and create an `R32_FLOAT` resource to address the depth buffer. On GCN and RDNA hardware, depth buffers are stored separately from stencil buffers. |
-| Motion vectors              | Current fraame  | Render or presentation       | `APPLICATION SPECIFIED (2x FLOAT)` | Texture   | The 2D motion vectors for the current frame provided by the application in [*(<-width, -height>*..*<width, height>*] range. If your application renders motion vectors with a different range, you may use the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L125) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure to adjust them to match the expected range for FSR2. Internally, FSR2 uses 16bit quantities to represent motion vectors in many cases, which means that while motion vectors with greater precision can be provided, FSR2 will not benefit from the increased precision. The resolution of the motion vector buffer should be equal to the render resolution, unless the [`FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS`](src/ffx-fsr2-api/ffx_fsr2.h#L88) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L103) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L101) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L164), in which case it should be equal to the presentation resolution. |
+| Depth buffer                | Current frame   | Render     | `APPLICATION SPECIFIED (1x FLOAT)` | Texture   | The render resolution depth buffer for the current frame provided by the application. The data should be provided as a single floating point value, the precision of which is under the application's control. The configuration of the depth should be communicated to FSR2 via the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166). You should set the [`FFX_FSR2_ENABLE_DEPTH_INVERTED`](src/ffx-fsr2-api/ffx_fsr2.h#L91) flag if your depth buffer is inverted (that is [1..0] range), and you should set the  flag if your depth buffer has as infinite far plane. If the application provides the depth buffer in `D32S8` format, then FSR2 will ignore the stencil component of the buffer, and create an `R32_FLOAT` resource to address the depth buffer. On GCN and RDNA hardware, depth buffers are stored separately from stencil buffers. |
+| Motion vectors              | Current fraame  | Render or presentation       | `APPLICATION SPECIFIED (2x FLOAT)` | Texture   | The 2D motion vectors for the current frame provided by the application in [*(<-width, -height>*..*<width, height>*] range. If your application renders motion vectors with a different range, you may use the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L126) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure to adjust them to match the expected range for FSR2. Internally, FSR2 uses 16bit quantities to represent motion vectors in many cases, which means that while motion vectors with greater precision can be provided, FSR2 will not benefit from the increased precision. The resolution of the motion vector buffer should be equal to the render resolution, unless the [`FFX_FSR2_ENABLE_DISPLAY_RESOLUTION_MOTION_VECTORS`](src/ffx-fsr2-api/ffx_fsr2.h#L89) flag is set in the [`flags`](src/ffx-fsr2-api/ffx_fsr2.h#L104) field of the [`FfxFsr2ContextDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L102) structure when creating the [`FfxFsr2Context`](src/ffx-fsr2-api/ffx_fsr2.h#L166), in which case it should be equal to the presentation resolution. |
 
 ### Resource outputs
 The following table contains all of the resources which are produced by the reconstruct & dilate stage.
@@ -609,7 +619,7 @@ The following table contains all of the resources which are produced by the reco
 ### Description
 The first step of the [Reconstruct & dilate](#reconstruct-and-dilate) stage is to compute the dilated depth values and motion vectors from the application's depth values and motion vectors for the current frame. Dilated depth values and motion vectors emphasise the edges of geometry which has been rendered into the depth buffer. This is because the edges of geometry will often introduce discontinuities into a contiguous series of depth values, meaning that as depth values and motion vectors are dilated, they will naturally follow the contours of the geometric edges present in the depth buffer. In order to compute the dilated depth values and motion vectors, FSR2 looks at the depth values for a 3x3 neighbourhood for each pixel and then selects the depth values and motion vectors in that neighbourhood where the depth value is nearest to the camera. In the diagram below, you can see how the central pixel of the 3x3 kernel is updated with the depth value and motion vectors from the pixel with the largest depth value - the pixel on the central, right hand side.
 
-As this stage is the first time that motion vectors are consumed by FSR2, this is where motion vector scaling is applied if using the FSR2 host API. Motion vector scaling factors provided via the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L125) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L114) structure and allows you to transform non-screenspace motion vectors into screenspace motion vectors which FSR2 expects.
+As this stage is the first time that motion vectors are consumed by FSR2, this is where motion vector scaling is applied if using the FSR2 host API. Motion vector scaling factors provided via the [`motionVectorScale`](src/ffx-fsr2-api/ffx_fsr2.h#L126) field of the [`FfxFsr2DispatchDescription`](src/ffx-fsr2-api/ffx_fsr2.h#L115) structure and allows you to transform non-screenspace motion vectors into screenspace motion vectors which FSR2 expects.
 
 ``` CPP
 // An example of how to manipulate motion vector scaling factors using the FSR2 host API. 
@@ -804,16 +814,21 @@ To build the FSR2 sample, please follow the following instructions:
 
 3) Open the solutions in the DX12 or Vulkan directory (depending on your preference), compile and run.
 
+# Limitations
+
+FSR 2 requires a GPU with typed UAV load support.
+
 # Version history
 
 | Version        | Date              | Notes                                                        | 
 | ---------------|-------------------|--------------------------------------------------------------|
+| **2.1.0**      | 2022-09-06        | Release of FidelityFX Super Resolution 2.1.                  |
 | **2.0.1**      | 2022-06-22        | Initial release of FidelityFX Super Resolution 2.0.          |
 
 
 # References
 [**Akeley-06**] Kurt Akeley and Jonathan Su, **"Minimum Triangle Separation for Correct Z-Buffer Occlusion"**, 
-[http://www.cs.cmu.edu/afs/cs/academic/class/15869-f11/www/readings/akeley06_triseparation.pdf](http://www.cs.cmu.edu/afs/cs/academic/class/15869-f11/www/readings/akeley06_triseparation.pdf)
+[http://www.cs.cmu.edu/afs/cs/academic/class/15869-f11/www/readings/akeley06_triseparation.pdf](https://www.cs.cmu.edu/afs/cs/academic/class/15869-f11/www/readings/akeley06_triseparation.pdf)
 
 [**Lanczos**] Lanczos resampling, **"Lanczos resampling"**, [https://en.wikipedia.org/wiki/Lanczos_resampling](https://en.wikipedia.org/wiki/Lanczos_resampling)
 

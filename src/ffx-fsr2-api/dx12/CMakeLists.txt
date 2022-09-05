@@ -24,7 +24,7 @@ if(NOT ${FFX_FSR2_API_DX12})
 endif()
 
 set(FFX_SC_DX12_BASE_ARGS
-    -E CS -Wno-for-redefinition -Wno-ambig-lit-shift -Wno-conversion -DFFX_HLSL=1 -DFFX_HLSL_6_2=1)
+    -E CS -Wno-for-redefinition -Wno-ambig-lit-shift -DFFX_HLSL=1 -DFFX_HLSL_6_2=1)
 
 file(GLOB SHADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/*.h"

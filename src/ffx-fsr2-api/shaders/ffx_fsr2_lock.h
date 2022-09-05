@@ -19,13 +19,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-FfxFloat32 GetLuma(FFX_MIN16_I2 pos)
+#ifndef FFX_FSR2_LOCK_H
+#define FFX_FSR2_LOCK_H
+
+FfxFloat32 GetLuma(FfxInt32x2 pos)
 {
     //add some bias to avoid locking dark areas
     return FfxFloat32(LoadPreparedInputColorLuma(pos));
 }
 
-FfxFloat32 ComputeThinFeatureConfidence(FFX_MIN16_I2 pos)
+FfxFloat32 ComputeThinFeatureConfidence(FfxInt32x2 pos)
 {
     const FfxInt32 RADIUS = 1;
 
@@ -59,7 +62,7 @@ FfxFloat32 ComputeThinFeatureConfidence(FFX_MIN16_I2 pos)
         for (FfxInt32 x = -RADIUS; x <= RADIUS; x++, idx++) {
             if (x == 0 && y == 0) continue;
 
-            FFX_MIN16_I2 samplePos = ClampLoad(pos, FFX_MIN16_I2(x, y), FFX_MIN16_I2(RenderSize()));
+            FfxInt32x2 samplePos = ClampLoad(pos, FfxInt32x2(x, y), FfxInt32x2(RenderSize()));
 
             FfxFloat32 sampleLuma = GetLuma(samplePos);
             FfxFloat32 difference = ffxMax(sampleLuma, fNucleus) / ffxMin(sampleLuma, fNucleus);
@@ -93,7 +96,7 @@ FfxFloat32 ComputeThinFeatureConfidence(FFX_MIN16_I2 pos)
 
 FFX_STATIC FfxBoolean s_bLockUpdated = FFX_FALSE;
 
-LOCK_STATUS_T ComputeLockStatus(FFX_MIN16_I2 iPxLrPos, LOCK_STATUS_T fLockStatus)
+FfxFloat32x3 ComputeLockStatus(FfxInt32x2 iPxLrPos, FfxFloat32x3 fLockStatus)
 {
     FfxFloat32 fConfidenceOfThinFeature = ComputeThinFeatureConfidence(iPxLrPos);
 
@@ -101,7 +104,7 @@ LOCK_STATUS_T ComputeLockStatus(FFX_MIN16_I2 iPxLrPos, LOCK_STATUS_T fLockStatus
     if (fConfidenceOfThinFeature > 0.0f)
     {
         //put to negative on new lock
-        fLockStatus[LOCK_LIFETIME_REMAINING] = (fLockStatus[LOCK_LIFETIME_REMAINING] == LOCK_STATUS_F1(0.0f)) ? LOCK_STATUS_F1(-LockInitialLifetime()) : LOCK_STATUS_F1(-(LockInitialLifetime() * 2));
+        fLockStatus[LOCK_LIFETIME_REMAINING] = (fLockStatus[LOCK_LIFETIME_REMAINING] == FfxFloat32(0.0f)) ? FfxFloat32(-LockInitialLifetime()) : FfxFloat32(-(LockInitialLifetime() * 2));
 
         s_bLockUpdated = FFX_TRUE;
     }
@@ -109,63 +112,15 @@ LOCK_STATUS_T ComputeLockStatus(FFX_MIN16_I2 iPxLrPos, LOCK_STATUS_T fLockStatus
     return fLockStatus;
 }
 
-void ComputeLock(FFX_MIN16_I2 iPxLrPos)
+void ComputeLock(FfxInt32x2 iPxLrPos)
 {
-    FfxFloat32x2 fSrcJitteredPos = FfxFloat32x2(iPxLrPos) + 0.5f - Jitter();
-    FfxFloat32x2 fLrPosInHr = (fSrcJitteredPos / RenderSize()) * DisplaySize();
-    FfxFloat32x2 fHrPos = floor(fLrPosInHr) + 0.5;
-    FFX_MIN16_I2 iPxHrPos = FFX_MIN16_I2(fHrPos);
+    FfxInt32x2 iPxHrPos = ComputeHrPosFromLrPos(iPxLrPos);
 
-    LOCK_STATUS_T fLockStatus = ComputeLockStatus(iPxLrPos, LoadLockStatus(iPxHrPos));
+    FfxFloat32x3 fLockStatus = ComputeLockStatus(iPxLrPos, LoadLockStatus(iPxHrPos));
 
     if ((s_bLockUpdated)) {
         StoreLockStatus(iPxHrPos, fLockStatus);
     }
 }
 
-FFX_GROUPSHARED FfxFloat32 gs_ReactiveMask[(8 + 4) * (8 + 4)];
-
-void StoreReactiveMaskToLDS(FfxUInt32x2 coord, FfxFloat32x2 value)
-{
-    FfxUInt32 baseIdx = coord.y * 12 + coord.x;
-    gs_ReactiveMask[baseIdx] = value.x;
-    gs_ReactiveMask[baseIdx + 1] = value.y;
-}
-
-FfxFloat32 LoadReactiveMaskFromLDS(FfxUInt32x2 coord)
-{
-    return gs_ReactiveMask[coord.y * 12 + coord.x];
-}
-
-void PreProcessReactiveMask(FFX_MIN16_I2 iPxLrPos, FfxUInt32x2 groupId, FfxUInt32x2 groupThreadId)
-{
-#if OPT_PRECOMPUTE_REACTIVE_MAX && !OPT_USE_EVAL_ACCUMULATION_REACTIVENESS
-
-    if (all(FFX_LESS_THAN(groupThreadId, FFX_BROADCAST_UINT32X2(6)))) {
-
-        FfxInt32x2 iPos = FfxInt32x2(groupId << 3) + FfxInt32x2(groupThreadId << 1) - 1;
-        FfxFloat32x4 fReactiveMask2x2 = GatherReactiveMask(iPos).wzxy;
-
-        StoreReactiveMaskToLDS(groupThreadId << 1, fReactiveMask2x2.xy);
-        StoreReactiveMaskToLDS((groupThreadId << 1) + FfxInt32x2(0, 1), fReactiveMask2x2.zw);
-    }
-
-    FFX_GROUP_MEMORY_BARRIER();
-
-    FfxFloat32 fReactiveMax = 0.0f;
-
-    for (FfxUInt32 row = 0; row < 4; row++) {
-        for (FfxUInt32 col = 0; col < 4; col++) {
-            const FfxUInt32x2 localOffset = groupThreadId + FfxUInt32x2(col, row);
-            const FfxBoolean bOutOfRenderBounds = any(FFX_GREATER_THAN_EQUAL((FfxInt32x2(groupId << 3) + FfxInt32x2(localOffset)), RenderSize()));
-            fReactiveMax = bOutOfRenderBounds ? fReactiveMax : ffxMax(fReactiveMax, LoadReactiveMaskFromLDS(localOffset));
-        }
-    }
-
-    // Threshold reactive value
-    fReactiveMax = fReactiveMax > 0.8f ? fReactiveMax : 0.0f;
-
-    StoreReactiveMax(iPxLrPos, FFX_MIN16_F(fReactiveMax));
-
-#endif //OPT_PRECOMPUTE_REACTIVE_MAX && !OPT_USE_EVAL_ACCUMULATION_REACTIVENESS
-}
+#endif // FFX_FSR2_LOCK_H

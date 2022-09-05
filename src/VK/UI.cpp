@@ -73,7 +73,7 @@ void FSR2Sample::BuildUI()
     // if we haven't initialized GLTFLoader yet, don't draw UI.
     if (m_pGltfLoader == nullptr)
     {
-        LoadScene(m_activeScene);
+        LoadScene(m_UIState.m_activeScene);
         return;
     }
 
@@ -133,13 +133,13 @@ void FSR2Sample::BuildUI()
             ImGui::Checkbox("Camera Headbobbing", &m_UIState.m_bHeadBobbing);
 
             auto getterLambda = [](void* data, int idx, const char** out_str)->bool { *out_str = ((std::vector<std::string> *)data)->at(idx).c_str(); return true; };
-            if (ImGui::Combo("Model", &m_activeScene, getterLambda, &m_sceneNames, (int)m_sceneNames.size()))
+            if (ImGui::Combo("Model", &m_UIState.m_activeScene, getterLambda, &m_sceneNames, (int)m_sceneNames.size()))
             {
-                m_UIState.bRenderParticleSystem = (m_activeScene == 11);
+                m_UIState.bRenderAnimatedTextures = (m_UIState.m_activeScene == 1);
                 // Note:
                 // probably queueing this as an event and handling it at the end/beginning 
                 // of frame is a better idea rather than in the middle of drawing UI.
-                LoadScene(m_activeScene);
+                LoadScene(m_UIState.m_activeScene);
 
                 //bail out as we need to reload everything
                 ImGui::End();
@@ -188,7 +188,7 @@ void FSR2Sample::BuildUI()
                 OnResize(true);
             }
 
-            if (m_UIState.m_nUpscaleType <= UPSCALE_TYPE_FSR_2_0)
+            if (m_UIState.m_nUpscaleType == UPSCALE_TYPE_FSR_2_0)
             {
                 // adjust to match the combo box options
                 int32_t upscaleQualityMode = m_nUpscaleMode - UPSCALE_QUALITY_MODE_QUALITY;
@@ -214,18 +214,26 @@ void FSR2Sample::BuildUI()
                     OnResize();
                 }
 
-                if (m_UIState.m_nUpscaleType == UPSCALE_TYPE_FSR_2_0)
+
+                if (ImGui::Checkbox("Dynamic resolution", &m_UIState.bDynamicRes))
                 {
-                    if (ImGui::Checkbox("Dynamic resolution", &m_UIState.bDynamicRes)) {
-                        OnResize();
-                    }
+                    OnResize();
                 }
-                else
-                    m_UIState.bDynamicRes = false;
+
+                const char* reactiveOptions[] = { "Disabled", "Manual Reactive Mask Generation", "Autogen FSR2 Helper Function" };
+                ImGui::Combo("Reactive Mask mode", (int*)(&m_UIState.nReactiveMaskMode), reactiveOptions, _countof(reactiveOptions));
+
+                ImGui::Checkbox("Use Transparency and Composition Mask", &m_UIState.bCompositionMask);
             }
             else
             {
                 m_UIState.mipBias = mipBias[UPSCALE_TYPE_NATIVE];
+            }
+
+
+            if (m_UIState.m_nUpscaleType != UPSCALE_TYPE_FSR_2_0)
+            {
+                m_UIState.bDynamicRes = false;
             }
 
             ImGui::Checkbox("RCAS Sharpening", &m_UIState.bUseRcas);
@@ -318,7 +326,7 @@ void FSR2Sample::BuildUI()
 
         if (ImGui::CollapsingHeader("Presentation Mode", ImGuiTreeNodeFlags_DefaultOpen))
         {
-            const char* fullscreenModes[] = { "Windowed", "BorderlessFullscreen", "ExclusiveFulscreen" };
+            const char* fullscreenModes[] = { "Windowed", "BorderlessFullscreen", "ExclusiveFullscreen" };
             if (ImGui::Combo("Fullscreen Mode", (int*)&m_fullscreenMode, fullscreenModes, _countof(fullscreenModes)))
             {
                 if (m_previousFullscreenMode != m_fullscreenMode)

@@ -60,30 +60,40 @@ struct FetchedBicubicSamples {
 };
 
 #if FFX_HALF
+struct FetchedBilinearSamplesMin16 {
+
+    FFX_MIN16_F4 fColor00;
+    FFX_MIN16_F4 fColor10;
+
+    FFX_MIN16_F4 fColor01;
+    FFX_MIN16_F4 fColor11;
+};
+
 struct FetchedBicubicSamplesMin16 {
 
-    FfxFloat16x4 fColor00;
-    FfxFloat16x4 fColor10;
-    FfxFloat16x4 fColor20;
-    FfxFloat16x4 fColor30;
+    FFX_MIN16_F4 fColor00;
+    FFX_MIN16_F4 fColor10;
+    FFX_MIN16_F4 fColor20;
+    FFX_MIN16_F4 fColor30;
 
-    FfxFloat16x4 fColor01;
-    FfxFloat16x4 fColor11;
-    FfxFloat16x4 fColor21;
-    FfxFloat16x4 fColor31;
+    FFX_MIN16_F4 fColor01;
+    FFX_MIN16_F4 fColor11;
+    FFX_MIN16_F4 fColor21;
+    FFX_MIN16_F4 fColor31;
 
-    FfxFloat16x4 fColor02;
-    FfxFloat16x4 fColor12;
-    FfxFloat16x4 fColor22;
-    FfxFloat16x4 fColor32;
+    FFX_MIN16_F4 fColor02;
+    FFX_MIN16_F4 fColor12;
+    FFX_MIN16_F4 fColor22;
+    FFX_MIN16_F4 fColor32;
 
-    FfxFloat16x4 fColor03;
-    FfxFloat16x4 fColor13;
-    FfxFloat16x4 fColor23;
-    FfxFloat16x4 fColor33;
+    FFX_MIN16_F4 fColor03;
+    FFX_MIN16_F4 fColor13;
+    FFX_MIN16_F4 fColor23;
+    FFX_MIN16_F4 fColor33;
 };
 #else //FFX_HALF
 #define FetchedBicubicSamplesMin16 FetchedBicubicSamples
+#define FetchedBilinearSamplesMin16 FetchedBilinearSamples
 #endif //FFX_HALF
 
 FfxFloat32x4 Linear(FfxFloat32x4 A, FfxFloat32x4 B, FfxFloat32 t)
@@ -99,39 +109,44 @@ FfxFloat32x4 Bilinear(FetchedBilinearSamples BilinearSamples, FfxFloat32x2 fPxFr
     return fColorXY;
 }
 
-// SEE: ../Interpolation/CatmullRom.ipynb, t=0 -> B, t=1 -> C
-FfxFloat32x4 CubicCatmullRom(FfxFloat32x4 A, FfxFloat32x4 B, FfxFloat32x4 C, FfxFloat32x4 D, FfxFloat32 t)
+#if FFX_HALF
+FFX_MIN16_F4 Linear(FFX_MIN16_F4 A, FFX_MIN16_F4 B, FFX_MIN16_F t)
 {
-    FfxFloat32 t2 = t * t;
-    FfxFloat32 t3 = t * t * t;
-    FfxFloat32x4 a = -A / 2.f + (3.f * B) / 2.f - (3.f * C) / 2.f + D / 2.f;
-    FfxFloat32x4 b = A - (5.f * B) / 2.f + 2.f * C - D / 2.f;
-    FfxFloat32x4 c = -A / 2.f + C / 2.f;
-    FfxFloat32x4 d = B;
-    return a * t3 + b * t2 + c * t + d;
+    return A + (B - A) * t;
 }
 
-FfxFloat32x4 BicubicCatmullRom(FetchedBicubicSamples BicubicSamples, FfxFloat32x2 fPxFrac)
+FFX_MIN16_F4 Bilinear(FetchedBilinearSamplesMin16 BilinearSamples, FFX_MIN16_F2 fPxFrac)
 {
-    FfxFloat32x4 fColorX0 = CubicCatmullRom(BicubicSamples.fColor00, BicubicSamples.fColor10, BicubicSamples.fColor20, BicubicSamples.fColor30, fPxFrac.x);
-    FfxFloat32x4 fColorX1 = CubicCatmullRom(BicubicSamples.fColor01, BicubicSamples.fColor11, BicubicSamples.fColor21, BicubicSamples.fColor31, fPxFrac.x);
-    FfxFloat32x4 fColorX2 = CubicCatmullRom(BicubicSamples.fColor02, BicubicSamples.fColor12, BicubicSamples.fColor22, BicubicSamples.fColor32, fPxFrac.x);
-    FfxFloat32x4 fColorX3 = CubicCatmullRom(BicubicSamples.fColor03, BicubicSamples.fColor13, BicubicSamples.fColor23, BicubicSamples.fColor33, fPxFrac.x);
-    FfxFloat32x4 fColorXY = CubicCatmullRom(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
+    FFX_MIN16_F4 fColorX0 = Linear(BilinearSamples.fColor00, BilinearSamples.fColor10, fPxFrac.x);
+    FFX_MIN16_F4 fColorX1 = Linear(BilinearSamples.fColor01, BilinearSamples.fColor11, fPxFrac.x);
+    FFX_MIN16_F4 fColorXY = Linear(fColorX0, fColorX1, fPxFrac.y);
     return fColorXY;
 }
+#endif
 
-FfxFloat32 Lanczos2(FfxFloat32 x)
+FfxFloat32 Lanczos2NoClamp(FfxFloat32 x)
 {
     const FfxFloat32 PI = 3.141592653589793f; // TODO: share SDK constants
     return abs(x) < FSR2_EPSILON ? 1.f : (sin(PI * x) / (PI * x)) * (sin(0.5f * PI * x) / (0.5f * PI * x));
 }
 
-#if FFX_HALF
-FfxFloat16 Lanczos2(FfxFloat16 x)
+FfxFloat32 Lanczos2(FfxFloat32 x)
 {
-    const FFX_MIN16_F PI = FfxFloat16(3.141592653589793f); // TODO: share SDK constants
-    return abs(x) < FSR2_EPSILON ? FfxFloat16(1.f) : (sin(PI * x) / (PI * x)) * (sin(FfxFloat16(0.5f) * PI * x) / (FfxFloat16(0.5f) * PI * x));
+    x = ffxMin(abs(x), 2.0f);
+    return Lanczos2NoClamp(x);
+}
+
+#if FFX_HALF
+FFX_MIN16_F Lanczos2NoClamp(FFX_MIN16_F x)
+{
+    const FFX_MIN16_F PI = FFX_MIN16_F(3.141592653589793f); // TODO: share SDK constants
+    return abs(x) < FFX_MIN16_F(FSR2_EPSILON) ? FFX_MIN16_F(1.f) : (sin(PI * x) / (PI * x)) * (sin(FFX_MIN16_F(0.5f) * PI * x) / (FFX_MIN16_F(0.5f) * PI * x));
+}
+
+FFX_MIN16_F Lanczos2(FFX_MIN16_F x)
+{
+    x = ffxMin(abs(x), FFX_MIN16_F(2.0f));
+    return Lanczos2NoClamp(x);
 }
 #endif //FFX_HALF
 
@@ -144,11 +159,11 @@ FfxFloat32 Lanczos2ApproxSqNoClamp(FfxFloat32 x2)
 }
 
 #if FFX_HALF
-FfxFloat16 Lanczos2ApproxSqNoClamp(FfxFloat16 x2)
+FFX_MIN16_F Lanczos2ApproxSqNoClamp(FFX_MIN16_F x2)
 {
-    FfxFloat16 a = FfxFloat16(2.0f / 5.0f) * x2 - FfxFloat16(1);
-    FfxFloat16 b = FfxFloat16(1.0f / 4.0f) * x2 - FfxFloat16(1);
-    return (FfxFloat16(25.0f / 16.0f) * a * a - FfxFloat16(25.0f / 16.0f - 1)) * (b * b);
+    FFX_MIN16_F a = FFX_MIN16_F(2.0f / 5.0f) * x2 - FFX_MIN16_F(1);
+    FFX_MIN16_F b = FFX_MIN16_F(1.0f / 4.0f) * x2 - FFX_MIN16_F(1);
+    return (FFX_MIN16_F(25.0f / 16.0f) * a * a - FFX_MIN16_F(25.0f / 16.0f - 1)) * (b * b);
 }
 #endif //FFX_HALF
 
@@ -159,9 +174,9 @@ FfxFloat32 Lanczos2ApproxSq(FfxFloat32 x2)
 }
 
 #if FFX_HALF
-FfxFloat16 Lanczos2ApproxSq(FfxFloat16 x2)
+FFX_MIN16_F Lanczos2ApproxSq(FFX_MIN16_F x2)
 {
-    x2 = ffxMin(x2, FfxFloat16(4.0f));
+    x2 = ffxMin(x2, FFX_MIN16_F(4.0f));
     return Lanczos2ApproxSqNoClamp(x2);
 }
 #endif //FFX_HALF
@@ -172,7 +187,7 @@ FfxFloat32 Lanczos2ApproxNoClamp(FfxFloat32 x)
 }
 
 #if FFX_HALF
-FfxFloat16 Lanczos2ApproxNoClamp(FfxFloat16 x)
+FFX_MIN16_F Lanczos2ApproxNoClamp(FFX_MIN16_F x)
 {
     return Lanczos2ApproxSqNoClamp(x * x);
 }
@@ -184,7 +199,7 @@ FfxFloat32 Lanczos2Approx(FfxFloat32 x)
 }
 
 #if FFX_HALF
-FfxFloat16 Lanczos2Approx(FfxFloat16 x)
+FFX_MIN16_F Lanczos2Approx(FFX_MIN16_F x)
 {
     return Lanczos2ApproxSq(x * x);
 }
@@ -196,14 +211,13 @@ FfxFloat32 Lanczos2_UseLUT(FfxFloat32 x)
 }
 
 #if FFX_HALF
-FfxFloat16 Lanczos2_UseLUT(FfxFloat16 x)
+FFX_MIN16_F Lanczos2_UseLUT(FFX_MIN16_F x)
 {
-    return SampleLanczos2Weight(abs(x));
+    return FFX_MIN16_F(SampleLanczos2Weight(abs(x)));
 }
 #endif //FFX_HALF
 
-#if FFX_FSR2_OPTION_USE_LANCZOS_LUT
-FfxFloat32x4 Lanczos2_AllowLUT(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFloat32x4 fColor2, FfxFloat32x4 fColor3, FfxFloat32 t)
+FfxFloat32x4 Lanczos2_UseLUT(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFloat32x4 fColor2, FfxFloat32x4 fColor3, FfxFloat32 t)
 {
     FfxFloat32 fWeight0 = Lanczos2_UseLUT(-1.f - t);
     FfxFloat32 fWeight1 = Lanczos2_UseLUT(-0.f - t);
@@ -212,18 +226,15 @@ FfxFloat32x4 Lanczos2_AllowLUT(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFl
     return (fWeight0 * fColor0 + fWeight1 * fColor1 + fWeight2 * fColor2 + fWeight3 * fColor3) / (fWeight0 + fWeight1 + fWeight2 + fWeight3);
 }
 #if FFX_HALF
-FfxFloat16x4 Lanczos2_AllowLUT(FfxFloat16x4 fColor0, FfxFloat16x4 fColor1, FfxFloat16x4 fColor2, FfxFloat16x4 fColor3, FfxFloat16 t)
+FFX_MIN16_F4 Lanczos2_UseLUT(FFX_MIN16_F4 fColor0, FFX_MIN16_F4 fColor1, FFX_MIN16_F4 fColor2, FFX_MIN16_F4 fColor3, FFX_MIN16_F t)
 {
-    FfxFloat16 fWeight0 = Lanczos2_UseLUT(FfxFloat16(-1.f) - t);
-    FfxFloat16 fWeight1 = Lanczos2_UseLUT(FfxFloat16(-0.f) - t);
-    FfxFloat16 fWeight2 = Lanczos2_UseLUT(FfxFloat16(+1.f) - t);
-    FfxFloat16 fWeight3 = Lanczos2_UseLUT(FfxFloat16(+2.f) - t);
+    FFX_MIN16_F fWeight0 = Lanczos2_UseLUT(FFX_MIN16_F(-1.f) - t);
+    FFX_MIN16_F fWeight1 = Lanczos2_UseLUT(FFX_MIN16_F(-0.f) - t);
+    FFX_MIN16_F fWeight2 = Lanczos2_UseLUT(FFX_MIN16_F(+1.f) - t);
+    FFX_MIN16_F fWeight3 = Lanczos2_UseLUT(FFX_MIN16_F(+2.f) - t);
     return (fWeight0 * fColor0 + fWeight1 * fColor1 + fWeight2 * fColor2 + fWeight3 * fColor3) / (fWeight0 + fWeight1 + fWeight2 + fWeight3);
 }
-#endif //FFX_HALF
-#else //FFX_FSR2_OPTION_USE_LANCZOS_LUT
-#define Lanczos2_AllowLUT Lanczos2
-#endif //FFX_FSR2_OPTION_USE_LANCZOS_LUT
+#endif
 
 FfxFloat32x4 Lanczos2(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFloat32x4 fColor2, FfxFloat32x4 fColor3, FfxFloat32 t)
 {
@@ -236,11 +247,11 @@ FfxFloat32x4 Lanczos2(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFloat32x4 f
 
 FfxFloat32x4 Lanczos2(FetchedBicubicSamples Samples, FfxFloat32x2 fPxFrac)
 {
-    FfxFloat32x4 fColorX0 = Lanczos2_AllowLUT(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
-    FfxFloat32x4 fColorX1 = Lanczos2_AllowLUT(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
-    FfxFloat32x4 fColorX2 = Lanczos2_AllowLUT(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
-    FfxFloat32x4 fColorX3 = Lanczos2_AllowLUT(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
-    FfxFloat32x4 fColorXY = Lanczos2_AllowLUT(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
+    FfxFloat32x4 fColorX0 = Lanczos2(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
+    FfxFloat32x4 fColorX1 = Lanczos2(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
+    FfxFloat32x4 fColorX2 = Lanczos2(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
+    FfxFloat32x4 fColorX3 = Lanczos2(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
+    FfxFloat32x4 fColorXY = Lanczos2(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
 
     // Deringing
 
@@ -269,36 +280,36 @@ FfxFloat32x4 Lanczos2(FetchedBicubicSamples Samples, FfxFloat32x2 fPxFrac)
 }
 
 #if FFX_HALF
-FfxFloat16x4 Lanczos2(FfxFloat16x4 fColor0, FfxFloat16x4 fColor1, FfxFloat16x4 fColor2, FfxFloat16x4 fColor3, FfxFloat16 t)
+FFX_MIN16_F4 Lanczos2(FFX_MIN16_F4 fColor0, FFX_MIN16_F4 fColor1, FFX_MIN16_F4 fColor2, FFX_MIN16_F4 fColor3, FFX_MIN16_F t)
 {
-    FfxFloat16 fWeight0 = Lanczos2(FfxFloat16(-1.f) - t);
-    FfxFloat16 fWeight1 = Lanczos2(FfxFloat16(-0.f) - t);
-    FfxFloat16 fWeight2 = Lanczos2(FfxFloat16(+1.f) - t);
-    FfxFloat16 fWeight3 = Lanczos2(FfxFloat16(+2.f) - t);
+    FFX_MIN16_F fWeight0 = Lanczos2(FFX_MIN16_F(-1.f) - t);
+    FFX_MIN16_F fWeight1 = Lanczos2(FFX_MIN16_F(-0.f) - t);
+    FFX_MIN16_F fWeight2 = Lanczos2(FFX_MIN16_F(+1.f) - t);
+    FFX_MIN16_F fWeight3 = Lanczos2(FFX_MIN16_F(+2.f) - t);
     return (fWeight0 * fColor0 + fWeight1 * fColor1 + fWeight2 * fColor2 + fWeight3 * fColor3) / (fWeight0 + fWeight1 + fWeight2 + fWeight3);
 }
 
-FfxFloat16x4 Lanczos2(FetchedBicubicSamplesMin16 Samples, FFX_MIN16_F2 fPxFrac)
+FFX_MIN16_F4 Lanczos2(FetchedBicubicSamplesMin16 Samples, FFX_MIN16_F2 fPxFrac)
 {
-    FfxFloat16x4 fColorX0 = Lanczos2_AllowLUT(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
-    FfxFloat16x4 fColorX1 = Lanczos2_AllowLUT(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
-    FfxFloat16x4 fColorX2 = Lanczos2_AllowLUT(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
-    FfxFloat16x4 fColorX3 = Lanczos2_AllowLUT(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
-    FfxFloat16x4 fColorXY = Lanczos2_AllowLUT(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
+    FFX_MIN16_F4 fColorX0 = Lanczos2(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
+    FFX_MIN16_F4 fColorX1 = Lanczos2(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
+    FFX_MIN16_F4 fColorX2 = Lanczos2(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
+    FFX_MIN16_F4 fColorX3 = Lanczos2(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
+    FFX_MIN16_F4 fColorXY = Lanczos2(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
 
     // Deringing
 
     // TODO: only use 4 by checking jitter
     const FfxInt32 iDeringingSampleCount = 4;
-    const FfxFloat16x4 fDeringingSamples[4] = {
+    const FFX_MIN16_F4 fDeringingSamples[4] = {
         Samples.fColor11,
         Samples.fColor21,
         Samples.fColor12,
         Samples.fColor22,
     };
 
-    FfxFloat16x4 fDeringingMin = fDeringingSamples[0];
-    FfxFloat16x4 fDeringingMax = fDeringingSamples[0];
+    FFX_MIN16_F4 fDeringingMin = fDeringingSamples[0];
+    FFX_MIN16_F4 fDeringingMax = fDeringingSamples[0];
 
     FFX_UNROLL
     for (FfxInt32 iSampleIndex = 1; iSampleIndex < iDeringingSampleCount; ++iSampleIndex)
@@ -313,6 +324,79 @@ FfxFloat16x4 Lanczos2(FetchedBicubicSamplesMin16 Samples, FFX_MIN16_F2 fPxFrac)
 }
 #endif //FFX_HALF
 
+
+FfxFloat32x4 Lanczos2LUT(FetchedBicubicSamples Samples, FfxFloat32x2 fPxFrac)
+{
+    FfxFloat32x4 fColorX0 = Lanczos2_UseLUT(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
+    FfxFloat32x4 fColorX1 = Lanczos2_UseLUT(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
+    FfxFloat32x4 fColorX2 = Lanczos2_UseLUT(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
+    FfxFloat32x4 fColorX3 = Lanczos2_UseLUT(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
+    FfxFloat32x4 fColorXY = Lanczos2_UseLUT(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
+
+    // Deringing
+
+    // TODO: only use 4 by checking jitter
+    const FfxInt32 iDeringingSampleCount = 4;
+    const FfxFloat32x4 fDeringingSamples[4] = {
+        Samples.fColor11,
+        Samples.fColor21,
+        Samples.fColor12,
+        Samples.fColor22,
+    };
+
+    FfxFloat32x4 fDeringingMin = fDeringingSamples[0];
+    FfxFloat32x4 fDeringingMax = fDeringingSamples[0];
+
+    FFX_UNROLL
+    for (FfxInt32 iSampleIndex = 1; iSampleIndex < iDeringingSampleCount; ++iSampleIndex) {
+
+        fDeringingMin = ffxMin(fDeringingMin, fDeringingSamples[iSampleIndex]);
+        fDeringingMax = ffxMax(fDeringingMax, fDeringingSamples[iSampleIndex]);
+    }
+
+    fColorXY = clamp(fColorXY, fDeringingMin, fDeringingMax);
+
+    return fColorXY;
+}
+
+#if FFX_HALF
+FFX_MIN16_F4 Lanczos2LUT(FetchedBicubicSamplesMin16 Samples, FFX_MIN16_F2 fPxFrac)
+{
+    FFX_MIN16_F4 fColorX0 = Lanczos2_UseLUT(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
+    FFX_MIN16_F4 fColorX1 = Lanczos2_UseLUT(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
+    FFX_MIN16_F4 fColorX2 = Lanczos2_UseLUT(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
+    FFX_MIN16_F4 fColorX3 = Lanczos2_UseLUT(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
+    FFX_MIN16_F4 fColorXY = Lanczos2_UseLUT(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
+
+    // Deringing
+
+    // TODO: only use 4 by checking jitter
+    const FfxInt32 iDeringingSampleCount = 4;
+    const FFX_MIN16_F4 fDeringingSamples[4] = {
+        Samples.fColor11,
+        Samples.fColor21,
+        Samples.fColor12,
+        Samples.fColor22,
+    };
+
+    FFX_MIN16_F4 fDeringingMin = fDeringingSamples[0];
+    FFX_MIN16_F4 fDeringingMax = fDeringingSamples[0];
+
+    FFX_UNROLL
+    for (FfxInt32 iSampleIndex = 1; iSampleIndex < iDeringingSampleCount; ++iSampleIndex)
+    {
+        fDeringingMin = ffxMin(fDeringingMin, fDeringingSamples[iSampleIndex]);
+        fDeringingMax = ffxMax(fDeringingMax, fDeringingSamples[iSampleIndex]);
+    }
+
+    fColorXY = clamp(fColorXY, fDeringingMin, fDeringingMax);
+
+    return fColorXY;
+}
+#endif //FFX_HALF
+
+
+
 FfxFloat32x4 Lanczos2Approx(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFloat32x4 fColor2, FfxFloat32x4 fColor3, FfxFloat32 t)
 {
     FfxFloat32 fWeight0 = Lanczos2ApproxNoClamp(-1.f - t);
@@ -323,12 +407,12 @@ FfxFloat32x4 Lanczos2Approx(FfxFloat32x4 fColor0, FfxFloat32x4 fColor1, FfxFloat
 }
 
 #if FFX_HALF
-FfxFloat16x4 Lanczos2Approx(FfxFloat16x4 fColor0, FfxFloat16x4 fColor1, FfxFloat16x4 fColor2, FfxFloat16x4 fColor3, FfxFloat16 t)
+FFX_MIN16_F4 Lanczos2Approx(FFX_MIN16_F4 fColor0, FFX_MIN16_F4 fColor1, FFX_MIN16_F4 fColor2, FFX_MIN16_F4 fColor3, FFX_MIN16_F t)
 {
-    FfxFloat16 fWeight0 = Lanczos2ApproxNoClamp(FfxFloat16(-1.f) - t);
-    FfxFloat16 fWeight1 = Lanczos2ApproxNoClamp(FfxFloat16(-0.f) - t);
-    FfxFloat16 fWeight2 = Lanczos2ApproxNoClamp(FfxFloat16(+1.f) - t);
-    FfxFloat16 fWeight3 = Lanczos2ApproxNoClamp(FfxFloat16(+2.f) - t);
+    FFX_MIN16_F fWeight0 = Lanczos2ApproxNoClamp(FFX_MIN16_F(-1.f) - t);
+    FFX_MIN16_F fWeight1 = Lanczos2ApproxNoClamp(FFX_MIN16_F(-0.f) - t);
+    FFX_MIN16_F fWeight2 = Lanczos2ApproxNoClamp(FFX_MIN16_F(+1.f) - t);
+    FFX_MIN16_F fWeight3 = Lanczos2ApproxNoClamp(FFX_MIN16_F(+2.f) - t);
     return (fWeight0 * fColor0 + fWeight1 * fColor1 + fWeight2 * fColor2 + fWeight3 * fColor3) / (fWeight0 + fWeight1 + fWeight2 + fWeight3);
 }
 #endif //FFX_HALF
@@ -368,27 +452,27 @@ FfxFloat32x4 Lanczos2Approx(FetchedBicubicSamples Samples, FfxFloat32x2 fPxFrac)
 }
 
 #if FFX_HALF
-FfxFloat16x4 Lanczos2Approx(FetchedBicubicSamplesMin16 Samples, FfxFloat16x2 fPxFrac)
+FFX_MIN16_F4 Lanczos2Approx(FetchedBicubicSamplesMin16 Samples, FFX_MIN16_F2 fPxFrac)
 {
-    FfxFloat16x4 fColorX0 = Lanczos2Approx(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
-    FfxFloat16x4 fColorX1 = Lanczos2Approx(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
-    FfxFloat16x4 fColorX2 = Lanczos2Approx(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
-    FfxFloat16x4 fColorX3 = Lanczos2Approx(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
-    FfxFloat16x4 fColorXY = Lanczos2Approx(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
+    FFX_MIN16_F4 fColorX0 = Lanczos2Approx(Samples.fColor00, Samples.fColor10, Samples.fColor20, Samples.fColor30, fPxFrac.x);
+    FFX_MIN16_F4 fColorX1 = Lanczos2Approx(Samples.fColor01, Samples.fColor11, Samples.fColor21, Samples.fColor31, fPxFrac.x);
+    FFX_MIN16_F4 fColorX2 = Lanczos2Approx(Samples.fColor02, Samples.fColor12, Samples.fColor22, Samples.fColor32, fPxFrac.x);
+    FFX_MIN16_F4 fColorX3 = Lanczos2Approx(Samples.fColor03, Samples.fColor13, Samples.fColor23, Samples.fColor33, fPxFrac.x);
+    FFX_MIN16_F4 fColorXY = Lanczos2Approx(fColorX0, fColorX1, fColorX2, fColorX3, fPxFrac.y);
 
     // Deringing
 
     // TODO: only use 4 by checking jitter
     const FfxInt32 iDeringingSampleCount = 4;
-    const FfxFloat16x4 fDeringingSamples[4] = {
+    const FFX_MIN16_F4 fDeringingSamples[4] = {
         Samples.fColor11,
         Samples.fColor21,
         Samples.fColor12,
         Samples.fColor22,
     };
 
-    FfxFloat16x4 fDeringingMin = fDeringingSamples[0];
-    FfxFloat16x4 fDeringingMax = fDeringingSamples[0];
+    FFX_MIN16_F4 fDeringingMin = fDeringingSamples[0];
+    FFX_MIN16_F4 fDeringingMax = fDeringingSamples[0];
 
     FFX_UNROLL
     for (FfxInt32 iSampleIndex = 1; iSampleIndex < iDeringingSampleCount; ++iSampleIndex)
@@ -401,94 +485,110 @@ FfxFloat16x4 Lanczos2Approx(FetchedBicubicSamplesMin16 Samples, FfxFloat16x2 fPx
 
     return fColorXY;
 }
+#endif
 
 // Clamp by offset direction. Assuming iPxSample is already in range and iPxOffset is compile time constant.
-FfxInt16x2 ClampLoadBicubic(FfxInt16x2 iPxSample, FfxInt16x2 iPxOffset, FfxInt16x2 iTextureSize)
+FfxInt32x2 ClampCoord(FfxInt32x2 iPxSample, FfxInt32x2 iPxOffset, FfxInt32x2 iTextureSize)
 {
-    FfxInt16x2 result = iPxSample + iPxOffset;
-    result.x = (iPxOffset.x <= 0) ? ffxMax(result.x, FfxInt16(0)) : result.x;
-    result.x = (iPxOffset.x > 0) ? ffxMin(result.x, iTextureSize.x - FfxInt16(1)) : result.x;
-    result.y = (iPxOffset.y <= 0) ? ffxMax(result.y, FfxInt16(0)) : result.y;
-    result.y = (iPxOffset.y > 0) ? ffxMin(result.y, iTextureSize.y - FfxInt16(1)) : result.y;
+    FfxInt32x2 result = iPxSample + iPxOffset;
+    result.x = (iPxOffset.x < 0) ? ffxMax(result.x, 0) : result.x;
+    result.x = (iPxOffset.x > 0) ? ffxMin(result.x, iTextureSize.x - 1) : result.x;
+    result.y = (iPxOffset.y < 0) ? ffxMax(result.y, 0) : result.y;
+    result.y = (iPxOffset.y > 0) ? ffxMin(result.y, iTextureSize.y - 1) : result.y;
+    return result;
+}
+#if FFX_HALF
+FFX_MIN16_I2 ClampCoord(FFX_MIN16_I2 iPxSample, FFX_MIN16_I2 iPxOffset, FFX_MIN16_I2 iTextureSize)
+{
+    FFX_MIN16_I2 result = iPxSample + iPxOffset;
+    result.x = (iPxOffset.x < FFX_MIN16_I(0)) ? ffxMax(result.x, FFX_MIN16_I(0)) : result.x;
+    result.x = (iPxOffset.x > FFX_MIN16_I(0)) ? ffxMin(result.x, iTextureSize.x - FFX_MIN16_I(1)) : result.x;
+    result.y = (iPxOffset.y < FFX_MIN16_I(0)) ? ffxMax(result.y, FFX_MIN16_I(0)) : result.y;
+    result.y = (iPxOffset.y > FFX_MIN16_I(0)) ? ffxMin(result.y, iTextureSize.y - FFX_MIN16_I(1)) : result.y;
     return result;
 }
 #endif //FFX_HALF
 
-FfxInt32x2 ClampLoadBicubic(FfxInt32x2 iPxSample, FfxInt32x2 iPxOffset, FfxInt32x2 iTextureSize)
-{
-    FfxInt32x2 result = iPxSample + iPxOffset;
-    result.x = (iPxOffset.x <= 0) ? ffxMax(result.x, 0) : result.x;
-    result.x = (iPxOffset.x > 0) ? ffxMin(result.x, iTextureSize.x - 1) : result.x;
-    result.y = (iPxOffset.y <= 0) ? ffxMax(result.y, 0) : result.y;
-    result.y = (iPxOffset.y > 0) ? ffxMin(result.y, iTextureSize.y - 1) : result.y;
-    return result;
-}
 
-#define DeclareCustomFetchBicubicSamplesWithType(SampleType, AddrType, Name, LoadTexture)               \
+#define DeclareCustomFetchBicubicSamplesWithType(SampleType, TextureType, AddrType, Name, LoadTexture)               \
     SampleType Name(AddrType iPxSample, AddrType iTextureSize)                                          \
     {                                                                                                   \
         SampleType Samples;                                                                             \
                                                                                                         \
-        Samples.fColor00 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(-1, -1), iTextureSize));    \
-        Samples.fColor10 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+0, -1), iTextureSize));    \
-        Samples.fColor20 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+1, -1), iTextureSize));    \
-        Samples.fColor30 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+2, -1), iTextureSize));    \
+        Samples.fColor00 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(-1, -1), iTextureSize)));    \
+        Samples.fColor10 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+0, -1), iTextureSize)));    \
+        Samples.fColor20 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+1, -1), iTextureSize)));    \
+        Samples.fColor30 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+2, -1), iTextureSize)));    \
                                                                                                         \
-        Samples.fColor01 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(-1, +0), iTextureSize));    \
-        Samples.fColor11 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+0, +0), iTextureSize));    \
-        Samples.fColor21 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+1, +0), iTextureSize));    \
-        Samples.fColor31 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+2, +0), iTextureSize));    \
+        Samples.fColor01 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(-1, +0), iTextureSize)));    \
+        Samples.fColor11 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+0, +0), iTextureSize)));    \
+        Samples.fColor21 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+1, +0), iTextureSize)));    \
+        Samples.fColor31 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+2, +0), iTextureSize)));    \
                                                                                                         \
-        Samples.fColor02 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(-1, +1), iTextureSize));    \
-        Samples.fColor12 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+0, +1), iTextureSize));    \
-        Samples.fColor22 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+1, +1), iTextureSize));    \
-        Samples.fColor32 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+2, +1), iTextureSize));    \
+        Samples.fColor02 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(-1, +1), iTextureSize)));    \
+        Samples.fColor12 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+0, +1), iTextureSize)));    \
+        Samples.fColor22 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+1, +1), iTextureSize)));    \
+        Samples.fColor32 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+2, +1), iTextureSize)));    \
                                                                                                         \
-        Samples.fColor03 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(-1, +2), iTextureSize));    \
-        Samples.fColor13 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+0, +2), iTextureSize));    \
-        Samples.fColor23 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+1, +2), iTextureSize));    \
-        Samples.fColor33 = LoadTexture(ClampLoadBicubic(iPxSample, AddrType(+2, +2), iTextureSize));    \
+        Samples.fColor03 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(-1, +2), iTextureSize)));    \
+        Samples.fColor13 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+0, +2), iTextureSize)));    \
+        Samples.fColor23 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+1, +2), iTextureSize)));    \
+        Samples.fColor33 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+2, +2), iTextureSize)));    \
                                                                                                         \
         return Samples;                                                                                 \
     }
 
 #define DeclareCustomFetchBicubicSamples(Name, LoadTexture)                                             \
-    DeclareCustomFetchBicubicSamplesWithType(FetchedBicubicSamples, FfxInt32x2, Name, LoadTexture)
+    DeclareCustomFetchBicubicSamplesWithType(FetchedBicubicSamples, FfxFloat32x4, FfxInt32x2, Name, LoadTexture)
 
 #define DeclareCustomFetchBicubicSamplesMin16(Name, LoadTexture)                                        \
-    DeclareCustomFetchBicubicSamplesWithType(FetchedBicubicSamplesMin16, FFX_MIN16_I2, Name, LoadTexture)
+    DeclareCustomFetchBicubicSamplesWithType(FetchedBicubicSamplesMin16, FFX_MIN16_F4, FfxInt32x2, Name, LoadTexture)
 
-#define DeclareCustomFetchBilinearSamples(Name, LoadTexture)                                            \
-    FetchedBilinearSamples Name(FFX_MIN16_I2 iPxSample, FFX_MIN16_I2 iTextureSize)                      \
+#define DeclareCustomFetchBilinearSamplesWithType(SampleType, TextureType,AddrType, Name, LoadTexture)  \
+    SampleType Name(AddrType iPxSample, AddrType iTextureSize)                                          \
     {                                                                                                   \
-        FetchedBilinearSamples Samples;                                                                 \
-        Samples.fColor00 = LoadTexture(ClampLoad(iPxSample, FFX_MIN16_I2(+0, +0), iTextureSize));       \
-        Samples.fColor10 = LoadTexture(ClampLoad(iPxSample, FFX_MIN16_I2(+1, +0), iTextureSize));       \
-        Samples.fColor01 = LoadTexture(ClampLoad(iPxSample, FFX_MIN16_I2(+0, +1), iTextureSize));       \
-        Samples.fColor11 = LoadTexture(ClampLoad(iPxSample, FFX_MIN16_I2(+1, +1), iTextureSize));       \
+        SampleType Samples;                                                                             \
+        Samples.fColor00 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+0, +0), iTextureSize)));           \
+        Samples.fColor10 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+1, +0), iTextureSize)));           \
+        Samples.fColor01 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+0, +1), iTextureSize)));           \
+        Samples.fColor11 = TextureType(LoadTexture(ClampCoord(iPxSample, AddrType(+1, +1), iTextureSize)));           \
         return Samples;                                                                                 \
     }
+
+#define DeclareCustomFetchBilinearSamples(Name, LoadTexture)                                             \
+    DeclareCustomFetchBilinearSamplesWithType(FetchedBilinearSamples, FfxFloat32x4, FfxInt32x2, Name, LoadTexture)
+
+#define DeclareCustomFetchBilinearSamplesMin16(Name, LoadTexture)                                        \
+    DeclareCustomFetchBilinearSamplesWithType(FetchedBilinearSamplesMin16, FFX_MIN16_F4, FfxInt32x2, Name, LoadTexture)
 
 // BE CAREFUL: there is some precision issues and (3253, 125) leading to (3252.9989778, 125.001102)
 // is common, so iPxSample can "jitter"
 #define DeclareCustomTextureSample(Name, InterpolateSamples, FetchSamples)                                                                                    \
     FfxFloat32x4 Name(FfxFloat32x2 fUvSample, FfxInt32x2 iTextureSize)                                                                                        \
     {                                                                                                                                                         \
-        FfxFloat32x2 fPxSample = fUvSample * FfxFloat32x2(iTextureSize) - FFX_BROADCAST_FLOAT32X2(0.5f);                                                            \
+        FfxFloat32x2 fPxSample = fUvSample * FfxFloat32x2(iTextureSize) - FfxFloat32x2(0.5f, 0.5f);                                                            \
         FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));                                                                                                  \
         FfxFloat32x2 fPxFrac = ffxFract(fPxSample);                                                                                                           \
-        FfxFloat32x4 fColorXY = FfxFloat32x4(InterpolateSamples(FetchSamples(FFX_MIN16_I2(iPxSample), FFX_MIN16_I2(iTextureSize)), FFX_MIN16_F2(fPxFrac)));   \
+        FfxFloat32x4 fColorXY = FfxFloat32x4(InterpolateSamples(FetchSamples(iPxSample, iTextureSize), fPxFrac));   \
         return fColorXY;                                                                                                                                      \
     }
 
 #define DeclareCustomTextureSampleMin16(Name, InterpolateSamples, FetchSamples)                                                                             \
-    FfxFloat32x4 Name(FfxFloat32x2 fUvSample, FfxInt32x2 iTextureSize)                                                                                      \
+    FFX_MIN16_F4 Name(FfxFloat32x2 fUvSample, FfxInt32x2 iTextureSize)                                                                                      \
     {                                                                                                                                                       \
-        FfxFloat32x2 fPxSample = fUvSample * FfxFloat32x2(iTextureSize) - FFX_BROADCAST_FLOAT32X2(0.5f);                                                          \
+        FfxFloat32x2 fPxSample = fUvSample * FfxFloat32x2(iTextureSize) - FfxFloat32x2(0.5f, 0.5f);                                                         \
         FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));                                                                                                \
-        FfxFloat32x2 fPxFrac = ffxFract(fPxSample);                                                                                                         \
-        FfxFloat32x4 fColorXY = FfxFloat32x4(InterpolateSamples(FetchSamples(FFX_MIN16_I2(iPxSample), FFX_MIN16_I2(iTextureSize)), FFX_MIN16_F2(fPxFrac))); \
+        FFX_MIN16_F2 fPxFrac = FFX_MIN16_F2(ffxFract(fPxSample));                                                                                            \
+        FFX_MIN16_F4 fColorXY = FFX_MIN16_F4(InterpolateSamples(FetchSamples(iPxSample, iTextureSize), fPxFrac)); \
         return fColorXY;                                                                                                                                    \
     }
+
+#define FFX_FSR2_CONCAT_ID(x, y) x ## y
+#define FFX_FSR2_CONCAT(x, y) FFX_FSR2_CONCAT_ID(x, y)
+#define FFX_FSR2_SAMPLER_1D_0 Lanczos2
+#define FFX_FSR2_SAMPLER_1D_1 Lanczos2LUT
+#define FFX_FSR2_SAMPLER_1D_2 Lanczos2Approx
+
+#define FFX_FSR2_GET_LANCZOS_SAMPLER1D(x) FFX_FSR2_CONCAT(FFX_FSR2_SAMPLER_1D_, x)
 
 #endif //!defined( FFX_FSR2_SAMPLE_H )

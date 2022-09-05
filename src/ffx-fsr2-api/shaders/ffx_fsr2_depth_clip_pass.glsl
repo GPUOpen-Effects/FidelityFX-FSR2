@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 
 // FSR2 pass 3
-// SRV  7 : FSR2_ReconstructedPrevNearestDepth  : r_ReconstructedPrevNearestDepth
+// SRV  7 : FSR2_ReconstructedPrevNearestDepth  : r_reconstructed_previous_nearest_depth
 // SRV  8 : FSR2_DilatedVelocity                : r_dilated_motion_vectors
 // SRV  9 : FSR2_DilatedDepth                   : r_dilatedDepth
 // UAV 12 : FSR2_DepthClip                      : rw_depth_clip
@@ -58,5 +58,5 @@
 FFX_FSR2_NUM_THREADS
 void main()
 {
-	DepthClip(FFX_MIN16_I2(gl_GlobalInvocationID.xy));
+	DepthClip(ivec2(gl_GlobalInvocationID.xy));
 }

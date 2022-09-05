@@ -77,7 +77,6 @@ private:
     // json config file
     json                        m_jsonConfigFile;
     std::vector<std::string>    m_sceneNames;
-    int                         m_activeScene;
     int                         m_activeCamera;
 
     bool                        m_bPlay;

@@ -1066,405 +1066,274 @@ FfxUInt32 AShrSU1(FfxUInt32 a, FfxUInt32 b)
 //==============================================================================================================================
 // Need to use manual unpack to get optimal execution (don't use packed types in buffers directly).
 // Unpack requires this pattern: https://gpuopen.com/first-steps-implementing-fp16/
-FfxFloat16x2 ffxUint32ToFloat16x2(FfxUInt32 x)
+FFX_MIN16_F2 ffxUint32ToFloat16x2(FfxUInt32 x)
 {
-    FfxFloat32x2 t = f16tof32(FfxUInt32x2(x & 0xFFFF, x >> 16));
-    return FfxFloat16x2(t);
+	FfxFloat32x2 t = f16tof32(FfxUInt32x2(x & 0xFFFF, x >> 16));
+	return FFX_MIN16_F2(t);
 }
-FfxFloat16x4 ffxUint32x2ToFloat16x4(FfxUInt32x2 x)
+FFX_MIN16_F4 ffxUint32x2ToFloat16x4(FfxUInt32x2 x)
 {
-    return FfxFloat16x4(ffxUint32ToFloat16x2(x.x), ffxUint32ToFloat16x2(x.y));
+	return FFX_MIN16_F4(ffxUint32ToFloat16x2(x.x), ffxUint32ToFloat16x2(x.y));
 }
-FfxUInt16x2 ffxUint32ToUint16x2(FfxUInt32 x)
+FFX_MIN16_U2 ffxUint32ToUint16x2(FfxUInt32 x)
 {
-    FfxUInt32x2 t = FfxUInt32x2(x & 0xFFFF, x >> 16);
-    return FfxUInt16x2(t);
+	FfxUInt32x2 t = FfxUInt32x2(x & 0xFFFF, x >> 16);
+	return FFX_MIN16_U2(t);
 }
-FfxUInt16x4 ffxUint32x2ToUint16x4(FfxUInt32x2 x)
+FFX_MIN16_U4 ffxUint32x2ToUint16x4(FfxUInt32x2 x)
 {
-    return FfxUInt16x4(ffxUint32ToUint16x2(x.x), ffxUint32ToUint16x2(x.y));
+	return FFX_MIN16_U4(ffxUint32ToUint16x2(x.x), ffxUint32ToUint16x2(x.y));
 }
 #define FFX_UINT32_TO_FLOAT16X2(x) ffxUint32ToFloat16x2(FfxUInt32(x))
 #define FFX_UINT32X2_TO_FLOAT16X4(x) ffxUint32x2ToFloat16x4(FfxUInt32x2(x))
 #define FFX_UINT32_TO_UINT16X2(x) ffxUint32ToUint16x2(FfxUInt32(x))
 #define FFX_UINT32X2_TO_UINT16X4(x) ffxUint32x2ToUint16x4(FfxUInt32x2(x))
 //------------------------------------------------------------------------------------------------------------------------------
-FfxUInt32 ffxFloat16x2ToUint32(FfxFloat16x2 x)
+FfxUInt32 FFX_MIN16_F2ToUint32(FFX_MIN16_F2 x)
 {
-    return f32tof16(x.x) + (f32tof16(x.y) << 16);
+	return f32tof16(x.x) + (f32tof16(x.y) << 16);
 }
-FfxUInt32x2 ffxFloat16x4ToUint32x2(FfxFloat16x4 x)
+FfxUInt32x2 FFX_MIN16_F4ToUint32x2(FFX_MIN16_F4 x)
 {
-    return FfxUInt32x2(ffxFloat16x2ToUint32(x.xy), ffxFloat16x2ToUint32(x.zw));
+	return FfxUInt32x2(FFX_MIN16_F2ToUint32(x.xy), FFX_MIN16_F2ToUint32(x.zw));
 }
-FfxUInt32 ffxUint16x2ToUint32(FfxUInt16x2 x)
+FfxUInt32 FFX_MIN16_U2ToUint32(FFX_MIN16_U2 x)
 {
-    return FfxUInt32(x.x) + (FfxUInt32(x.y) << 16);
+	return FfxUInt32(x.x) + (FfxUInt32(x.y) << 16);
 }
-FfxUInt32x2 ffxUint16x4ToUint32x2(FfxUInt16x4 x)
+FfxUInt32x2 FFX_MIN16_U4ToUint32x2(FFX_MIN16_U4 x)
 {
-    return FfxUInt32x2(ffxUint16x2ToUint32(x.xy), ffxUint16x2ToUint32(x.zw));
+	return FfxUInt32x2(FFX_MIN16_U2ToUint32(x.xy), FFX_MIN16_U2ToUint32(x.zw));
 }
-#define FFX_FLOAT16X2_TO_UINT32(x) ffxFloat16x2ToUint32(FfxFloat16x2(x))
-#define FFX_FLOAT16X4_TO_UINT32X2(x) ffxFloat16x4ToUint32x2(FfxFloat16x4(x))
-#define FFX_UINT16X2_TO_UINT32(x) ffxUint16x2ToUint32(FfxUInt16x2(x))
-#define FFX_UINT16X4_TO_UINT32X2(x) ffxUint16x4ToUint32x2(FfxUInt16x4(x))
+#define FFX_FLOAT16X2_TO_UINT32(x) FFX_MIN16_F2ToUint32(FFX_MIN16_F2(x))
+#define FFX_FLOAT16X4_TO_UINT32X2(x) FFX_MIN16_F4ToUint32x2(FFX_MIN16_F4(x))
+#define FFX_UINT16X2_TO_UINT32(x) FFX_MIN16_U2ToUint32(FFX_MIN16_U2(x))
+#define FFX_UINT16X4_TO_UINT32X2(x) FFX_MIN16_U4ToUint32x2(FFX_MIN16_U4(x))
 
 #if defined(FFX_HLSL_6_2) && !defined(FFX_NO_16_BIT_CAST)
-    #define FFX_TO_UINT16(x) asuint16(x)
-    #define FFX_TO_UINT16X2(x) asuint16(x)
-    #define FFX_TO_UINT16X3(x) asuint16(x)
-    #define FFX_TO_UINT16X4(x) asuint16(x)
+#define FFX_TO_UINT16(x) asuint16(x)
+#define FFX_TO_UINT16X2(x) asuint16(x)
+#define FFX_TO_UINT16X3(x) asuint16(x)
+#define FFX_TO_UINT16X4(x) asuint16(x)
 #else
-    #define FFX_TO_UINT16(a) FfxUInt16(f32tof16(FfxFloat32(a)))
-    #define FFX_TO_UINT16X2(a) FfxUInt16x2(FFX_TO_UINT16((a).x), FFX_TO_UINT16((a).y))
-    #define FFX_TO_UINT16X3(a) FfxUInt16x3(FFX_TO_UINT16((a).x), FFX_TO_UINT16((a).y), FFX_TO_UINT16((a).z))
-    #define FFX_TO_UINT16X4(a) FfxUInt16x4(FFX_TO_UINT16((a).x), FFX_TO_UINT16((a).y), FFX_TO_UINT16((a).z), FFX_TO_UINT16((a).w))
+#define FFX_TO_UINT16(a) FFX_MIN16_U(f32tof16(FfxFloat32(a)))
+#define FFX_TO_UINT16X2(a) FFX_MIN16_U2(FFX_TO_UINT16((a).x), FFX_TO_UINT16((a).y))
+#define FFX_TO_UINT16X3(a) FFX_MIN16_U3(FFX_TO_UINT16((a).x), FFX_TO_UINT16((a).y), FFX_TO_UINT16((a).z))
+#define FFX_TO_UINT16X4(a) FFX_MIN16_U4(FFX_TO_UINT16((a).x), FFX_TO_UINT16((a).y), FFX_TO_UINT16((a).z), FFX_TO_UINT16((a).w))
 #endif // #if defined(FFX_HLSL_6_2) && !defined(FFX_NO_16_BIT_CAST)
 
 #if defined(FFX_HLSL_6_2) && !defined(FFX_NO_16_BIT_CAST)
-    #define FFX_TO_FLOAT16(x) asfloat16(x)
-    #define FFX_TO_FLOAT16X2(x) asfloat16(x)
-    #define FFX_TO_FLOAT16X3(x) asfloat16(x)
-    #define FFX_TO_FLOAT16X4(x) asfloat16(x)
+#define FFX_TO_FLOAT16(x) asfloat16(x)
+#define FFX_TO_FLOAT16X2(x) asfloat16(x)
+#define FFX_TO_FLOAT16X3(x) asfloat16(x)
+#define FFX_TO_FLOAT16X4(x) asfloat16(x)
 #else
-    #define FFX_TO_FLOAT16(a) FfxFloat16(f16tof32(FfxUInt32(a)))
-    #define FFX_TO_FLOAT16X2(a) FfxFloat16x2(FFX_TO_FLOAT16((a).x), FFX_TO_FLOAT16((a).y))
-    #define FFX_TO_FLOAT16X3(a) FfxFloat16x3(FFX_TO_FLOAT16((a).x), FFX_TO_FLOAT16((a).y), FFX_TO_FLOAT16((a).z))
-    #define FFX_TO_FLOAT16X4(a) FfxFloat16x4(FFX_TO_FLOAT16((a).x), FFX_TO_FLOAT16((a).y), FFX_TO_FLOAT16((a).z), FFX_TO_FLOAT16((a).w))
+#define FFX_TO_FLOAT16(a) FFX_MIN16_F(f16tof32(FfxUInt32(a)))
+#define FFX_TO_FLOAT16X2(a) FFX_MIN16_F2(FFX_TO_FLOAT16((a).x), FFX_TO_FLOAT16((a).y))
+#define FFX_TO_FLOAT16X3(a) FFX_MIN16_F3(FFX_TO_FLOAT16((a).x), FFX_TO_FLOAT16((a).y), FFX_TO_FLOAT16((a).z))
+#define FFX_TO_FLOAT16X4(a) FFX_MIN16_F4(FFX_TO_FLOAT16((a).x), FFX_TO_FLOAT16((a).y), FFX_TO_FLOAT16((a).z), FFX_TO_FLOAT16((a).w))
 #endif // #if defined(FFX_HLSL_6_2) && !defined(FFX_NO_16_BIT_CAST)
 
 //==============================================================================================================================
-#if FFX_HLSL_6_2
-FfxFloat16 ffxBroadcastFloat16(FfxFloat16 a)
-{
-    return FfxFloat16(a);
-}
-FfxFloat16x2 ffxBroadcastFloat16x2(FfxFloat16 a)
-{
-    return FfxFloat16x2(a, a);
-}
-FfxFloat16x3 ffxBroadcastFloat16x3(FfxFloat16 a)
-{
-    return FfxFloat16x3(a, a, a);
-}
-FfxFloat16x4 ffxBroadcastFloat16x4(FfxFloat16 a)
-{
-    return FfxFloat16x4(a, a, a, a);
-}
-#define FFX_BROADCAST_FLOAT16(a)   FfxFloat16(a)
-#define FFX_BROADCAST_FLOAT16X2(a) FfxFloat16(a)
-#define FFX_BROADCAST_FLOAT16X3(a) FfxFloat16(a)
-#define FFX_BROADCAST_FLOAT16X4(a) FfxFloat16(a)
-#else
 #define FFX_BROADCAST_FLOAT16(a)   FFX_MIN16_F(a)
 #define FFX_BROADCAST_FLOAT16X2(a) FFX_MIN16_F(a)
 #define FFX_BROADCAST_FLOAT16X3(a) FFX_MIN16_F(a)
 #define FFX_BROADCAST_FLOAT16X4(a) FFX_MIN16_F(a)
-#endif
+
 //------------------------------------------------------------------------------------------------------------------------------
-#if FFX_HLSL_6_2
-FfxInt16 ffxBroadcastInt16(FfxInt16 a)
-{
-    return FfxInt16(a);
-}
-FfxInt16x2 ffxBroadcastInt16x2(FfxInt16 a)
-{
-    return FfxInt16x2(a, a);
-}
-FfxInt16x3 ffxBroadcastInt16x3(FfxInt16 a)
-{
-    return FfxInt16x3(a, a, a);
-}
-FfxInt16x4 ffxBroadcastInt16x4(FfxInt16 a)
-{
-    return FfxInt16x4(a, a, a, a);
-}
-#define FFX_BROADCAST_INT16(a)   FfxInt16(a)
-#define FFX_BROADCAST_INT16X2(a) FfxInt16(a)
-#define FFX_BROADCAST_INT16X3(a) FfxInt16(a)
-#define FFX_BROADCAST_INT16X4(a) FfxInt16(a)
-#else
 #define FFX_BROADCAST_INT16(a)   FFX_MIN16_I(a)
 #define FFX_BROADCAST_INT16X2(a) FFX_MIN16_I(a)
 #define FFX_BROADCAST_INT16X3(a) FFX_MIN16_I(a)
 #define FFX_BROADCAST_INT16X4(a) FFX_MIN16_I(a)
-#endif
+
 //------------------------------------------------------------------------------------------------------------------------------
-#if FFX_HLSL_6_2
-FfxUInt16 ffxBroadcastUInt16(FfxUInt16 a)
-{
-    return FfxUInt16(a);
-}
-FfxUInt16x2 ffxBroadcastUInt16x2(FfxUInt16 a)
-{
-    return FfxUInt16x2(a, a);
-}
-FfxUInt16x3 ffxBroadcastUInt16x3(FfxUInt16 a)
-{
-    return FfxUInt16x3(a, a, a);
-}
-FfxUInt16x4 ffxBroadcastUInt16x4(FfxUInt16 a)
-{
-    return FfxUInt16x4(a, a, a, a);
-}
-#define FFX_BROADCAST_UINT16(a)   FfxUInt16(a)
-#define FFX_BROADCAST_UINT16X2(a) FfxUInt16(a)
-#define FFX_BROADCAST_UINT16X3(a) FfxUInt16(a)
-#define FFX_BROADCAST_UINT16X4(a) FfxUInt16(a)
-#else
 #define FFX_BROADCAST_UINT16(a)   FFX_MIN16_U(a)
 #define FFX_BROADCAST_UINT16X2(a) FFX_MIN16_U(a)
 #define FFX_BROADCAST_UINT16X3(a) FFX_MIN16_U(a)
 #define FFX_BROADCAST_UINT16X4(a) FFX_MIN16_U(a)
-#endif
+
 //==============================================================================================================================
-FfxUInt16 ffxAbsHalf(FfxUInt16 a)
+FFX_MIN16_U ffxAbsHalf(FFX_MIN16_U a)
 {
-    return FfxUInt16(abs(FfxInt16(a)));
+	return FFX_MIN16_U(abs(FFX_MIN16_I(a)));
 }
-FfxUInt16x2 ffxAbsHalf(FfxUInt16x2 a)
+FFX_MIN16_U2 ffxAbsHalf(FFX_MIN16_U2 a)
 {
-    return FfxUInt16x2(abs(FfxInt16x2(a)));
+	return FFX_MIN16_U2(abs(FFX_MIN16_I2(a)));
 }
-FfxUInt16x3 ffxAbsHalf(FfxUInt16x3 a)
+FFX_MIN16_U3 ffxAbsHalf(FFX_MIN16_U3 a)
 {
-    return FfxUInt16x3(abs(FfxInt16x3(a)));
+	return FFX_MIN16_U3(abs(FFX_MIN16_I3(a)));
 }
-FfxUInt16x4 ffxAbsHalf(FfxUInt16x4 a)
+FFX_MIN16_U4 ffxAbsHalf(FFX_MIN16_U4 a)
 {
-    return FfxUInt16x4(abs(FfxInt16x4(a)));
+	return FFX_MIN16_U4(abs(FFX_MIN16_I4(a)));
 }
 //------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxClampHalf(FfxFloat16 x, FfxFloat16 n, FfxFloat16 m)
+FFX_MIN16_F ffxClampHalf(FFX_MIN16_F x, FFX_MIN16_F n, FFX_MIN16_F m)
 {
-    return max(n, min(x, m));
+	return max(n, min(x, m));
 }
-FfxFloat16x2 ffxClampHalf(FfxFloat16x2 x, FfxFloat16x2 n, FfxFloat16x2 m)
+FFX_MIN16_F2 ffxClampHalf(FFX_MIN16_F2 x, FFX_MIN16_F2 n, FFX_MIN16_F2 m)
 {
-    return max(n, min(x, m));
+	return max(n, min(x, m));
 }
-FfxFloat16x3 ffxClampHalf(FfxFloat16x3 x, FfxFloat16x3 n, FfxFloat16x3 m)
+FFX_MIN16_F3 ffxClampHalf(FFX_MIN16_F3 x, FFX_MIN16_F3 n, FFX_MIN16_F3 m)
 {
-    return max(n, min(x, m));
+	return max(n, min(x, m));
 }
-FfxFloat16x4 ffxClampHalf(FfxFloat16x4 x, FfxFloat16x4 n, FfxFloat16x4 m)
+FFX_MIN16_F4 ffxClampHalf(FFX_MIN16_F4 x, FFX_MIN16_F4 n, FFX_MIN16_F4 m)
 {
-    return max(n, min(x, m));
+	return max(n, min(x, m));
 }
 //------------------------------------------------------------------------------------------------------------------------------
 // V_FRACT_F16 (note DX frac() is different).
-FfxFloat16 ffxFract(FfxFloat16 x)
+FFX_MIN16_F ffxFract(FFX_MIN16_F x)
 {
-    return x - floor(x);
+	return x - floor(x);
 }
-FfxFloat16x2 ffxFract(FfxFloat16x2 x)
+FFX_MIN16_F2 ffxFract(FFX_MIN16_F2 x)
 {
-    return x - floor(x);
+	return x - floor(x);
 }
-FfxFloat16x3 ffxFract(FfxFloat16x3 x)
+FFX_MIN16_F3 ffxFract(FFX_MIN16_F3 x)
 {
-    return x - floor(x);
+	return x - floor(x);
 }
-FfxFloat16x4 ffxFract(FfxFloat16x4 x)
+FFX_MIN16_F4 ffxFract(FFX_MIN16_F4 x)
 {
-    return x - floor(x);
-}
-//------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxLerp(FfxFloat16 x, FfxFloat16 y, FfxFloat16 a)
-{
-    return lerp(x, y, a);
-}
-FfxFloat16x2 ffxLerp(FfxFloat16x2 x, FfxFloat16x2 y, FfxFloat16 a)
-{
-    return lerp(x, y, a);
-}
-FfxFloat16x2 ffxLerp(FfxFloat16x2 x, FfxFloat16x2 y, FfxFloat16x2 a)
-{
-    return lerp(x, y, a);
-}
-FfxFloat16x3 ffxLerp(FfxFloat16x3 x, FfxFloat16x3 y, FfxFloat16 a)
-{
-    return lerp(x, y, a);
-}
-FfxFloat16x3 ffxLerp(FfxFloat16x3 x, FfxFloat16x3 y, FfxFloat16x3 a)
-{
-    return lerp(x, y, a);
-}
-FfxFloat16x4 ffxLerp(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16 a)
-{
-    return lerp(x, y, a);
-}
-FfxFloat16x4 ffxLerp(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16x4 a)
-{
-    return lerp(x, y, a);
+	return x - floor(x);
 }
 //------------------------------------------------------------------------------------------------------------------------------
-#if FFX_HLSL_6_2
-FFX_MIN16_F ffxLerp(FFX_MIN16_F x, FFX_MIN16_F y, FFX_MIN16_F t)
+FFX_MIN16_F ffxLerp(FFX_MIN16_F x, FFX_MIN16_F y, FFX_MIN16_F a)
 {
-    return lerp(x, y, t);
+	return lerp(x, y, a);
 }
-FFX_MIN16_F2 ffxLerp(FFX_MIN16_F2 x, FFX_MIN16_F2 y, FFX_MIN16_F t)
+FFX_MIN16_F2 ffxLerp(FFX_MIN16_F2 x, FFX_MIN16_F2 y, FFX_MIN16_F a)
 {
-    return lerp(x, y, t);
+	return lerp(x, y, a);
 }
-FFX_MIN16_F2 ffxLerp(FFX_MIN16_F2 x, FFX_MIN16_F2 y, FFX_MIN16_F2 t)
+FFX_MIN16_F2 ffxLerp(FFX_MIN16_F2 x, FFX_MIN16_F2 y, FFX_MIN16_F2 a)
 {
-    return lerp(x, y, t);
+	return lerp(x, y, a);
 }
-FFX_MIN16_F3 ffxLerp(FFX_MIN16_F3 x, FFX_MIN16_F3 y, FFX_MIN16_F t)
+FFX_MIN16_F3 ffxLerp(FFX_MIN16_F3 x, FFX_MIN16_F3 y, FFX_MIN16_F a)
 {
-    return lerp(x, y, t);
+	return lerp(x, y, a);
 }
-FFX_MIN16_F3 ffxLerp(FFX_MIN16_F3 x, FFX_MIN16_F3 y, FFX_MIN16_F3 t)
+FFX_MIN16_F3 ffxLerp(FFX_MIN16_F3 x, FFX_MIN16_F3 y, FFX_MIN16_F3 a)
 {
-    return lerp(x, y, t);
+	return lerp(x, y, a);
 }
-FFX_MIN16_F4 ffxLerp(FFX_MIN16_F4 x, FFX_MIN16_F4 y, FFX_MIN16_F t)
+FFX_MIN16_F4 ffxLerp(FFX_MIN16_F4 x, FFX_MIN16_F4 y, FFX_MIN16_F a)
 {
-    return lerp(x, y, t);
+	return lerp(x, y, a);
 }
-FFX_MIN16_F4 ffxLerp(FFX_MIN16_F4 x, FFX_MIN16_F4 y, FFX_MIN16_F4 t)
+FFX_MIN16_F4 ffxLerp(FFX_MIN16_F4 x, FFX_MIN16_F4 y, FFX_MIN16_F4 a)
 {
-    return lerp(x, y, t);
-}
-//------------------------------------------------------------------------------------------------------------------------------
-FFX_MIN16_F ffxMin(FFX_MIN16_F x, FFX_MIN16_F y)
-{
-    return min(x, y);
-}
-FFX_MIN16_F2 ffxMin(FFX_MIN16_F2 x, FFX_MIN16_F2 y)
-{
-    return min(x, y);
-}
-FFX_MIN16_F3 ffxMin(FFX_MIN16_F3 x, FFX_MIN16_F3 y)
-{
-    return min(x, y);
-}
-FFX_MIN16_F4 ffxMin(FFX_MIN16_F4 x, FFX_MIN16_F4 y)
-{
-    return min(x, y);
+	return lerp(x, y, a);
 }
 //------------------------------------------------------------------------------------------------------------------------------
-FFX_MIN16_F ffxMax(FFX_MIN16_F x, FFX_MIN16_F y)
+FFX_MIN16_F ffxMax3Half(FFX_MIN16_F x, FFX_MIN16_F y, FFX_MIN16_F z)
 {
-    return max(x, y);
+	return max(x, max(y, z));
 }
-FFX_MIN16_F2 ffxMax(FFX_MIN16_F2 x, FFX_MIN16_F2 y)
+FFX_MIN16_F2 ffxMax3Half(FFX_MIN16_F2 x, FFX_MIN16_F2 y, FFX_MIN16_F2 z)
 {
-    return max(x, y);
+	return max(x, max(y, z));
 }
-FFX_MIN16_F3 ffxMax(FFX_MIN16_F3 x, FFX_MIN16_F3 y)
+FFX_MIN16_F3 ffxMax3Half(FFX_MIN16_F3 x, FFX_MIN16_F3 y, FFX_MIN16_F3 z)
 {
-    return max(x, y);
+	return max(x, max(y, z));
 }
-FFX_MIN16_F4 ffxMax(FFX_MIN16_F4 x, FFX_MIN16_F4 y)
+FFX_MIN16_F4 ffxMax3Half(FFX_MIN16_F4 x, FFX_MIN16_F4 y, FFX_MIN16_F4 z)
 {
-    return max(x, y);
-}
-#endif
-//------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxMax3Half(FfxFloat16 x, FfxFloat16 y, FfxFloat16 z)
-{
-    return max(x, max(y, z));
-}
-FfxFloat16x2 ffxMax3Half(FfxFloat16x2 x, FfxFloat16x2 y, FfxFloat16x2 z)
-{
-    return max(x, max(y, z));
-}
-FfxFloat16x3 ffxMax3Half(FfxFloat16x3 x, FfxFloat16x3 y, FfxFloat16x3 z)
-{
-    return max(x, max(y, z));
-}
-FfxFloat16x4 ffxMax3Half(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16x4 z)
-{
-    return max(x, max(y, z));
+	return max(x, max(y, z));
 }
 //------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxMin3Half(FfxFloat16 x, FfxFloat16 y, FfxFloat16 z)
+FFX_MIN16_F ffxMin3Half(FFX_MIN16_F x, FFX_MIN16_F y, FFX_MIN16_F z)
 {
-    return min(x, min(y, z));
+	return min(x, min(y, z));
 }
-FfxFloat16x2 ffxMin3Half(FfxFloat16x2 x, FfxFloat16x2 y, FfxFloat16x2 z)
+FFX_MIN16_F2 ffxMin3Half(FFX_MIN16_F2 x, FFX_MIN16_F2 y, FFX_MIN16_F2 z)
 {
-    return min(x, min(y, z));
+	return min(x, min(y, z));
 }
-FfxFloat16x3 ffxMin3Half(FfxFloat16x3 x, FfxFloat16x3 y, FfxFloat16x3 z)
+FFX_MIN16_F3 ffxMin3Half(FFX_MIN16_F3 x, FFX_MIN16_F3 y, FFX_MIN16_F3 z)
 {
-    return min(x, min(y, z));
+	return min(x, min(y, z));
 }
-FfxFloat16x4 ffxMin3Half(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16x4 z)
+FFX_MIN16_F4 ffxMin3Half(FFX_MIN16_F4 x, FFX_MIN16_F4 y, FFX_MIN16_F4 z)
 {
-    return min(x, min(y, z));
-}
-//------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxReciprocalHalf(FfxFloat16 x)
-{
-    return rcp(x);
-}
-FfxFloat16x2 ffxReciprocalHalf(FfxFloat16x2 x)
-{
-    return rcp(x);
-}
-FfxFloat16x3 ffxReciprocalHalf(FfxFloat16x3 x)
-{
-    return rcp(x);
-}
-FfxFloat16x4 ffxReciprocalHalf(FfxFloat16x4 x)
-{
-    return rcp(x);
+	return min(x, min(y, z));
 }
 //------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxReciprocalSquareRootHalf(FfxFloat16 x)
+FFX_MIN16_F ffxReciprocalHalf(FFX_MIN16_F x)
 {
-    return rsqrt(x);
+	return rcp(x);
 }
-FfxFloat16x2 ffxReciprocalSquareRootHalf(FfxFloat16x2 x)
+FFX_MIN16_F2 ffxReciprocalHalf(FFX_MIN16_F2 x)
 {
-    return rsqrt(x);
+	return rcp(x);
 }
-FfxFloat16x3 ffxReciprocalSquareRootHalf(FfxFloat16x3 x)
+FFX_MIN16_F3 ffxReciprocalHalf(FFX_MIN16_F3 x)
 {
-    return rsqrt(x);
+	return rcp(x);
 }
-FfxFloat16x4 ffxReciprocalSquareRootHalf(FfxFloat16x4 x)
+FFX_MIN16_F4 ffxReciprocalHalf(FFX_MIN16_F4 x)
 {
-    return rsqrt(x);
-}
-//------------------------------------------------------------------------------------------------------------------------------
-FfxFloat16 ffxSaturate(FfxFloat16 x)
-{
-    return saturate(x);
-}
-FfxFloat16x2 ffxSaturate(FfxFloat16x2 x)
-{
-    return saturate(x);
-}
-FfxFloat16x3 ffxSaturate(FfxFloat16x3 x)
-{
-    return saturate(x);
-}
-FfxFloat16x4 ffxSaturate(FfxFloat16x4 x)
-{
-    return saturate(x);
+	return rcp(x);
 }
 //------------------------------------------------------------------------------------------------------------------------------
-FfxUInt16 ffxBitShiftRightHalf(FfxUInt16 a, FfxUInt16 b)
+FFX_MIN16_F ffxReciprocalSquareRootHalf(FFX_MIN16_F x)
 {
-    return FfxUInt16(FfxInt16(a) >> FfxInt16(b));
+	return rsqrt(x);
 }
-FfxUInt16x2 ffxBitShiftRightHalf(FfxUInt16x2 a, FfxUInt16x2 b)
+FFX_MIN16_F2 ffxReciprocalSquareRootHalf(FFX_MIN16_F2 x)
 {
-    return FfxUInt16x2(FfxInt16x2(a) >> FfxInt16x2(b));
+	return rsqrt(x);
 }
-FfxUInt16x3 ffxBitShiftRightHalf(FfxUInt16x3 a, FfxUInt16x3 b)
+FFX_MIN16_F3 ffxReciprocalSquareRootHalf(FFX_MIN16_F3 x)
 {
-    return FfxUInt16x3(FfxInt16x3(a) >> FfxInt16x3(b));
+	return rsqrt(x);
 }
-FfxUInt16x4 ffxBitShiftRightHalf(FfxUInt16x4 a, FfxUInt16x4 b)
+FFX_MIN16_F4 ffxReciprocalSquareRootHalf(FFX_MIN16_F4 x)
 {
-    return FfxUInt16x4(FfxInt16x4(a) >> FfxInt16x4(b));
+	return rsqrt(x);
+}
+//------------------------------------------------------------------------------------------------------------------------------
+FFX_MIN16_F ffxSaturate(FFX_MIN16_F x)
+{
+	return saturate(x);
+}
+FFX_MIN16_F2 ffxSaturate(FFX_MIN16_F2 x)
+{
+	return saturate(x);
+}
+FFX_MIN16_F3 ffxSaturate(FFX_MIN16_F3 x)
+{
+	return saturate(x);
+}
+FFX_MIN16_F4 ffxSaturate(FFX_MIN16_F4 x)
+{
+	return saturate(x);
+}
+//------------------------------------------------------------------------------------------------------------------------------
+FFX_MIN16_U ffxBitShiftRightHalf(FFX_MIN16_U a, FFX_MIN16_U b)
+{
+	return FFX_MIN16_U(FFX_MIN16_I(a) >> FFX_MIN16_I(b));
+}
+FFX_MIN16_U2 ffxBitShiftRightHalf(FFX_MIN16_U2 a, FFX_MIN16_U2 b)
+{
+	return FFX_MIN16_U2(FFX_MIN16_I2(a) >> FFX_MIN16_I2(b));
+}
+FFX_MIN16_U3 ffxBitShiftRightHalf(FFX_MIN16_U3 a, FFX_MIN16_U3 b)
+{
+	return FFX_MIN16_U3(FFX_MIN16_I3(a) >> FFX_MIN16_I3(b));
+}
+FFX_MIN16_U4 ffxBitShiftRightHalf(FFX_MIN16_U4 a, FFX_MIN16_U4 b)
+{
+	return FFX_MIN16_U4(FFX_MIN16_I4(a) >> FFX_MIN16_I4(b));
 }
 #endif // FFX_HALF
 

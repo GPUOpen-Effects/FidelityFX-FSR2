@@ -30,7 +30,7 @@
 // SRV 14 : FSR2_LumaHistory                    : r_luma_history
 // SRV 16 : FSR2_LanczosLutData                 : r_lanczos_lut
 // SRV 26 : FSR2_MaximumUpsampleBias            : r_upsample_maximum_bias_lut
-// SRV 27 : FSR2_ReactiveMaskMax                : r_reactive_max
+// SRV 27 : FSR2_DilatedReactiveMasks           : r_dilated_reactive_masks
 // SRV 28 : FSR2_ExposureMips                   : r_imgMips
 // UAV 10 : FSR2_InternalUpscaled1              : rw_internal_upscaled_color
 // UAV 11 : FSR2_LockStatus1                    : rw_lock_status
@@ -39,8 +39,11 @@
 // CB   1 : FSR2DispatchOffsets
 
 #define FSR2_BIND_SRV_EXPOSURE                               0
-#define FSR2_BIND_SRV_TRANSPARENCY_AND_COMPOSITION_MASK      1
+#if FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS
 #define FSR2_BIND_SRV_DILATED_MOTION_VECTORS                 2
+#else
+#define FSR2_BIND_SRV_MOTION_VECTORS                         2
+#endif
 #define FSR2_BIND_SRV_INTERNAL_UPSCALED                      3
 #define FSR2_BIND_SRV_LOCK_STATUS                            4
 #define FSR2_BIND_SRV_DEPTH_CLIP                             5
@@ -48,7 +51,7 @@
 #define FSR2_BIND_SRV_LUMA_HISTORY                           7
 #define FSR2_BIND_SRV_LANCZOS_LUT                            8
 #define FSR2_BIND_SRV_UPSCALE_MAXIMUM_BIAS_LUT               9
-#define FSR2_BIND_SRV_REACTIVE_MAX                          10
+#define FSR2_BIND_SRV_DILATED_REACTIVE_MASKS                10
 #define FSR2_BIND_SRV_EXPOSURE_MIPS                         11
 #define FSR2_BIND_UAV_INTERNAL_UPSCALED                      0
 #define FSR2_BIND_UAV_LOCK_STATUS                            1
@@ -86,5 +89,5 @@ void CS(uint2 uGroupId : SV_GroupID, uint2 uGroupThreadId : SV_GroupThreadID)
 
     uint2 uDispatchThreadId = uGroupId * uint2(FFX_FSR2_THREAD_GROUP_WIDTH, FFX_FSR2_THREAD_GROUP_HEIGHT) + uGroupThreadId;
 
-    Accumulate(min16int2(uDispatchThreadId));
+    Accumulate(uDispatchThreadId);
 }

@@ -19,9 +19,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#ifndef FFX_FSR2_DEPTH_CLIP_H
+#define FFX_FSR2_DEPTH_CLIP_H
+
 FFX_STATIC const FfxFloat32 DepthClipBaseScale = 4.0f;
 
-FfxFloat32 ComputeSampleDepthClip(FFX_MIN16_I2 iPxSamplePos, FfxFloat32 fPreviousDepth, FfxFloat32 fPreviousDepthBilinearWeight, FfxFloat32 fCurrentDepthViewSpace)
+FfxFloat32 ComputeSampleDepthClip(FfxInt32x2 iPxSamplePos, FfxFloat32 fPreviousDepth, FfxFloat32 fPreviousDepthBilinearWeight, FfxFloat32 fCurrentDepthViewSpace)
 {
     FfxFloat32 fPrevNearestDepthViewSpace = abs(ConvertFromDeviceDepthToViewSpace(fPreviousDepth));
 
@@ -42,13 +45,13 @@ FfxFloat32 ComputeSampleDepthClip(FFX_MIN16_I2 iPxSamplePos, FfxFloat32 fPreviou
     rw_debug_out[iPxSamplePos] = FfxFloat32x4(fCurrentDepthViewSpace, fPrevNearestDepthViewSpace, fDepthDiff, fDepthClipFactor);
 #endif
 
-    return fPreviousDepthBilinearWeight * fDepthClipFactor * DepthClipBaseScale;
+    return fPreviousDepthBilinearWeight * fDepthClipFactor * ffxLerp(1.0f, DepthClipBaseScale, ffxSaturate(fDepthDiff * fDepthDiff));
 }
 
 FfxFloat32 ComputeDepthClip(FfxFloat32x2 fUvSample, FfxFloat32 fCurrentDepthViewSpace)
 {
     FfxFloat32x2 fPxSample = fUvSample * RenderSize() - 0.5f;
-    FFX_MIN16_I2 iPxSample = FFX_MIN16_I2(floor(fPxSample));
+    FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));
     FfxFloat32x2 fPxFrac = ffxFract(fPxSample);
 
     const FfxFloat32 fBilinearWeights[2][2] = {
@@ -66,8 +69,8 @@ FfxFloat32 ComputeDepthClip(FfxFloat32x2 fUvSample, FfxFloat32 fCurrentDepthView
     FfxFloat32 fWeightSum = 0.0f;
     for (FfxInt32 y = 0; y <= 1; ++y) {
         for (FfxInt32 x = 0; x <= 1; ++x) {
-            FFX_MIN16_I2 iSamplePos = iPxSample + FFX_MIN16_I2(x, y);
-            if (IsOnScreen(iSamplePos, FFX_MIN16_I2(RenderSize()))) {
+            FfxInt32x2 iSamplePos = iPxSample + FfxInt32x2(x, y);
+            if (IsOnScreen(iSamplePos, RenderSize())) {
                 FfxFloat32 fBilinearWeight = fBilinearWeights[y][x];
                 if (fBilinearWeight > reconstructedDepthBilinearWeightThreshold) {
                     fDepth += ComputeSampleDepthClip(iSamplePos, LoadReconstructedPrevDepth(iSamplePos), fBilinearWeight, fCurrentDepthViewSpace);
@@ -80,9 +83,9 @@ FfxFloat32 ComputeDepthClip(FfxFloat32x2 fUvSample, FfxFloat32 fCurrentDepthView
     return (fWeightSum > 0) ? fDepth / fWeightSum : DepthClipBaseScale;
 }
 
-void DepthClip(FFX_MIN16_I2 iPxPos)
+void DepthClip(FfxInt32x2 iPxPos)
 {
-    FfxFloat32x2 fDepthUv = (FfxFloat32x2(iPxPos) + 0.5f) / RenderSize();
+    FfxFloat32x2 fDepthUv = (iPxPos + 0.5f) / RenderSize();
     FfxFloat32x2 fMotionVector = LoadDilatedMotionVector(iPxPos);
     FfxFloat32x2 fDilatedUv = fDepthUv + fMotionVector;
     FfxFloat32 fCurrentDepthViewSpace = abs(ConvertFromDeviceDepthToViewSpace(LoadDilatedDepth(iPxPos)));
@@ -91,3 +94,5 @@ void DepthClip(FFX_MIN16_I2 iPxPos)
 
     StoreDepthClip(iPxPos, fDepthClip);
 }
+
+#endif //!defined( FFX_FSR2_DEPTH_CLIPH )

@@ -55,11 +55,25 @@ typedef enum UpscaleQualityMode {
     UPSCALE_QUALITY_MODE_COUNT
 } UpscaleQualityMode;
 
+typedef enum ReactiveMaskMode {
+    REACTIVE_MASK_MODE_OFF = 0,         // Nothing written to the reactive mask
+    REACTIVE_MASK_MODE_ON = 1,          // Particles written to the reactive mask
+    REACTIVE_MASK_MODE_AUTOGEN = 2,     // The mask is auto generated using FSR2's helper function
+
+    // add above this.
+    REACTIVE_MASK_MODE_COUNT
+} ReactiveMaskMode;
+
 struct UIState
 {
     Camera  camera;
     bool    m_bCameraInertia = false;
     bool    m_bHeadBobbing = false;
+
+    bool    m_bPlayAnimations = true;
+    float   m_fTextureAnimationSpeed = 1.0f;
+    int     m_activeScene = 0;
+    bool    m_bAnimateSpotlight = false;
 
     //
     // WINDOW MANAGEMENT
@@ -76,7 +90,9 @@ struct UIState
 
     bool bReset = false;
 
-    bool  bRenderParticleSystem = false;
+    int   nLightModulationMode = 0;
+    bool  bRenderParticleSystem = true;
+    bool  bRenderAnimatedTextures = true;
     bool  bUseMagnifier;
     bool  bLockMagnifierPosition;
     bool  bLockMagnifierPositionHistory;
@@ -108,14 +124,30 @@ struct UIState
     unsigned int                closestVelocitySamplePattern = 0; // 5 samples
     float                       Feedback = 15.f / 16.f;
 
-    // FSR2 auto reactive
-    bool                        bUseFsr2AutoReactive = false;
+    // FSR2 reactive mask
+    ReactiveMaskMode            nReactiveMaskMode = REACTIVE_MASK_MODE_ON;
     float                       fFsr2AutoReactiveScale = 1.f;
-    float                       fFsr2AutoReactiveThreshold = 0.01f;
+    float                       fFsr2AutoReactiveThreshold = 0.2f;
+    float                       fFsr2AutoReactiveBinaryValue = 0.9f;
     bool                        bFsr2AutoReactiveTonemap = true;
     bool                        bFsr2AutoReactiveInverseTonemap = false;
     bool                        bFsr2AutoReactiveThreshold = true;
     bool                        bFsr2AutoReactiveUseMax = true;
+
+    // FSR2 composition mask
+    bool                        bCompositionMask = true;
+
+    // FSR2
+    bool                        bUseDebugOut = false;
+    int                         nDebugBlitSurface = 6; // FFX_FSR2_RESOURCE_IDENTIFIER_INTERNAL_UPSCALED_COLOR
+    int                         nDebugOutMappingR = 0;
+    int                         nDebugOutMappingG = 1;
+    int                         nDebugOutMappingB = 2;
+    float                       v2DebugOutMappingR[2] = { 0.f, 1.f };
+    float                       v2DebugOutMappingG[2] = { 0.f, 1.f };
+    float                       v2DebugOutMappingB[2] = { 0.f, 1.f };
+
+    float                       v4DebugSliderValues[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
     //
     // APP/SCENE CONTROLS

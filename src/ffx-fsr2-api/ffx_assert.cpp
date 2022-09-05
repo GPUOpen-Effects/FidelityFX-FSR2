@@ -23,7 +23,9 @@
 #include <stdlib.h>  // for malloc()
 
 #ifdef _WIN32
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>  // required for OutputDebugString()
 #include <stdio.h>    // required for sprintf_s
 #endif                // #ifndef _WIN32
@@ -47,8 +49,8 @@ bool ffxAssertReport(const char* file, int32_t line, const char* condition, cons
 
 #ifdef _WIN32
     // form the final assertion string and output to the TTY.
-    const size_t bufferSize = snprintf(NULL, 0, "%s(%d): ASSERTION FAILED. %s\n", file, line, message ? message : condition) + 1;
-    char*        tempBuf    = (char*)malloc(bufferSize);
+    const size_t bufferSize = static_cast<size_t>(snprintf(nullptr, 0, "%s(%d): ASSERTION FAILED. %s\n", file, line, message ? message : condition)) + 1;
+    char*        tempBuf    = static_cast<char*>(malloc(bufferSize));
     if (!tempBuf) {
 
         return true;

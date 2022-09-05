@@ -22,57 +22,70 @@
 #ifndef FFX_FSR2_POSTPROCESS_LOCK_STATUS_H
 #define FFX_FSR2_POSTPROCESS_LOCK_STATUS_H
 
+FfxFloat32x4 WrapShadingChangeLuma(FfxInt32x2 iPxSample)
+{
+    return FfxFloat32x4(LoadMipLuma(iPxSample, LumaMipLevelToUse()), 0, 0, 0);
+}
+
+#if FFX_HALF
 FFX_MIN16_F4 WrapShadingChangeLuma(FFX_MIN16_I2 iPxSample)
 {
     return FFX_MIN16_F4(LoadMipLuma(iPxSample, LumaMipLevelToUse()), 0, 0, 0);
 }
+#endif
 
+#if FFX_FSR2_OPTION_POSTPROCESSLOCKSTATUS_SAMPLERS_USE_DATA_HALF && FFX_HALF
+DeclareCustomFetchBilinearSamplesMin16(FetchShadingChangeLumaSamples, WrapShadingChangeLuma)
+#else
 DeclareCustomFetchBilinearSamples(FetchShadingChangeLumaSamples, WrapShadingChangeLuma)
+#endif
 DeclareCustomTextureSample(ShadingChangeLumaSample, Bilinear, FetchShadingChangeLumaSamples)
 
-FFX_MIN16_F GetShadingChangeLuma(FfxFloat32x2 fUvCoord)
+FfxFloat32 GetShadingChangeLuma(FfxFloat32x2 fUvCoord)
 {
     // const FfxFloat32 fShadingChangeLuma = exp(ShadingChangeLumaSample(fUvCoord, LumaMipDimensions()) * LumaMipRcp());
-    const FFX_MIN16_F fShadingChangeLuma = FFX_MIN16_F(exp(SampleMipLuma(fUvCoord, LumaMipLevelToUse()) * FFX_MIN16_F(LumaMipRcp())));
+    const FfxFloat32 fShadingChangeLuma = FfxFloat32(exp(SampleMipLuma(fUvCoord, LumaMipLevelToUse()) * FfxFloat32(LumaMipRcp())));
     return fShadingChangeLuma;
 }
 
-LockState GetLockState(LOCK_STATUS_T fLockStatus)
+LockState GetLockState(FfxFloat32x3 fLockStatus)
 {
     LockState state = { FFX_FALSE, FFX_FALSE };
 
     //Check if this is a new or refreshed lock
-    state.NewLock = fLockStatus[LOCK_LIFETIME_REMAINING] < LOCK_STATUS_F1(0.0f);
+    state.NewLock = fLockStatus[LOCK_LIFETIME_REMAINING] < FfxFloat32(0.0f);
 
     //For a non-refreshed lock, the lifetime is set to LockInitialLifetime()
-    state.WasLockedPrevFrame = fLockStatus[LOCK_TRUST] != LOCK_STATUS_F1(0.0f);
+    state.WasLockedPrevFrame = fLockStatus[LOCK_TRUST] != FfxFloat32(0.0f);
 
     return state;
 }
 
-LockState PostProcessLockStatus(FFX_MIN16_I2 iPxHrPos, FFX_PARAMETER_IN FfxFloat32x2 fLrUvJittered, FFX_PARAMETER_IN FFX_MIN16_F fDepthClipFactor, FFX_PARAMETER_IN FfxFloat32 fHrVelocity,
-    FFX_PARAMETER_INOUT FfxFloat32 fAccumulationTotalWeight, FFX_PARAMETER_INOUT LOCK_STATUS_T fLockStatus, FFX_PARAMETER_OUT FFX_MIN16_F fLuminanceDiff) {
+LockState PostProcessLockStatus(FfxInt32x2 iPxHrPos, FFX_PARAMETER_IN FfxFloat32x2 fLrUvJittered, FFX_PARAMETER_IN FfxFloat32 fDepthClipFactor, const FfxFloat32 fAccumulationMask, FFX_PARAMETER_IN FfxFloat32 fHrVelocity,
+    FFX_PARAMETER_INOUT FfxFloat32 fAccumulationTotalWeight, FFX_PARAMETER_INOUT FfxFloat32x3 fLockStatus, FFX_PARAMETER_OUT FfxFloat32 fLuminanceDiff) {
 
     const LockState state = GetLockState(fLockStatus);
 
     fLockStatus[LOCK_LIFETIME_REMAINING] = abs(fLockStatus[LOCK_LIFETIME_REMAINING]);
 
-    FFX_MIN16_F fShadingChangeLuma = GetShadingChangeLuma(fLrUvJittered);
+    FfxFloat32 fShadingChangeLuma = GetShadingChangeLuma(fLrUvJittered);
 
     //init temporal shading change factor, init to -1 or so in reproject to know if "true new"?
-    fLockStatus[LOCK_TEMPORAL_LUMA] = (fLockStatus[LOCK_TEMPORAL_LUMA] == LOCK_STATUS_F1(0.0f)) ? fShadingChangeLuma : fLockStatus[LOCK_TEMPORAL_LUMA];
+    fLockStatus[LOCK_TEMPORAL_LUMA] = (fLockStatus[LOCK_TEMPORAL_LUMA] == FfxFloat32(0.0f)) ? fShadingChangeLuma : fLockStatus[LOCK_TEMPORAL_LUMA];
 
-    FFX_MIN16_F fPreviousShadingChangeLuma = fLockStatus[LOCK_TEMPORAL_LUMA];
-    fLockStatus[LOCK_TEMPORAL_LUMA] = ffxLerp(fLockStatus[LOCK_TEMPORAL_LUMA], LOCK_STATUS_F1(fShadingChangeLuma), LOCK_STATUS_F1(0.5f));
-    fLuminanceDiff = FFX_MIN16_F(1) - MinDividedByMax(fPreviousShadingChangeLuma, fShadingChangeLuma);
+    FfxFloat32 fPreviousShadingChangeLuma = fLockStatus[LOCK_TEMPORAL_LUMA];
+    fLockStatus[LOCK_TEMPORAL_LUMA] = ffxLerp(fLockStatus[LOCK_TEMPORAL_LUMA], FfxFloat32(fShadingChangeLuma), FfxFloat32(0.5f));
+    fLuminanceDiff = FfxFloat32(1) - MinDividedByMax(fPreviousShadingChangeLuma, fShadingChangeLuma);
 
-    if (fLuminanceDiff > FFX_MIN16_F(0.2f)) {
+    if (fLuminanceDiff > FfxFloat32(0.2f)) {
         KillLock(fLockStatus);
     }
 
-    if (!state.NewLock && fLockStatus[LOCK_LIFETIME_REMAINING] >= LOCK_STATUS_F1(0))
+    if (!state.NewLock && fLockStatus[LOCK_LIFETIME_REMAINING] >= FfxFloat32(0))
     {
-        const FFX_MIN16_F depthClipThreshold = FFX_MIN16_F(0.99f);
+        fLockStatus[LOCK_LIFETIME_REMAINING] *= (1.0f - fAccumulationMask);
+
+        const FfxFloat32 depthClipThreshold = FfxFloat32(0.99f);
         if (fDepthClipFactor < depthClipThreshold)
         {
             KillLock(fLockStatus);

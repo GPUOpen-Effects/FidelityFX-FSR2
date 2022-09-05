@@ -48,8 +48,8 @@ cbuffer cbGenerateReactive : register(b0)
 {
     float   scale;
     float   threshold;
+    float   binaryValue;
     uint    flags;
-    float   _padding_;
 };
 
 FFX_FSR2_NUM_THREADS
@@ -79,7 +79,7 @@ void CS(uint2 uGroupId : SV_GroupID, uint2 uGroupThreadId : SV_GroupThreadID)
     out_reactive_value = (flags & FFX_FSR2_AUTOREACTIVEFLAGS_USE_COMPONENTS_MAX) ? max(delta.x, max(delta.y, delta.z)) : length(delta);
     out_reactive_value *= scale;
 
-    out_reactive_value = (flags & FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_THRESHOLD) ? (out_reactive_value < threshold ? 0 : 1) : out_reactive_value;
+    out_reactive_value = (flags & FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_THRESHOLD) ? (out_reactive_value < threshold ? 0 : binaryValue) : out_reactive_value;
 
     rw_output_reactive_mask[uDispatchThreadId] = out_reactive_value;
 }

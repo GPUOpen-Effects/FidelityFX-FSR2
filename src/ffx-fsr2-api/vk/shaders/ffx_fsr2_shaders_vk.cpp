@@ -29,14 +29,13 @@
 #include "ffx_fsr2_prepare_input_color_pass_permutations.h"
 #include "ffx_fsr2_reconstruct_previous_depth_pass_permutations.h"
 #include "ffx_fsr2_rcas_pass_permutations.h"
-#include <string.h>
 
 #if defined(POPULATE_PERMUTATION_KEY)
 #undef POPULATE_PERMUTATION_KEY
 #endif // #if defined(POPULATE_PERMUTATION_KEY)
 #define POPULATE_PERMUTATION_KEY(options, key)                                                                \
 key.index = 0;                                                                                                \
-key.FFX_FSR2_OPTION_USE_LANCZOS_LUT = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PERMUTATION_LANCZOS_LUT);                     \
+key.FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PERMUTATION_REPROJECT_USE_LANCZOS_TYPE);                     \
 key.FFX_FSR2_OPTION_HDR_COLOR_INPUT = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PERMUTATION_HDR_COLOR_INPUT);                 \
 key.FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PERMUTATION_LOW_RES_MOTION_VECTORS);   \
 key.FFX_FSR2_OPTION_JITTERED_MOTION_VECTORS = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PERMUTATION_JITTER_MOTION_VECTORS);   \
@@ -114,7 +113,7 @@ Fsr2ShaderBlobVK fsr2GetComputeLuminancePyramidPassPermutationBlobByIndex(uint32
     ffx_fsr2_compute_luminance_pyramid_pass_PermutationKey key;
 
     key.index = 0;                                                                                                
-    key.FFX_FSR2_OPTION_USE_LANCZOS_LUT = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_LANCZOS_LUT);                     
+    key.FFX_FSR2_OPTION_REPROJECT_USE_LANCZOS_TYPE = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_REPROJECT_USE_LANCZOS_TYPE);
     key.FFX_FSR2_OPTION_HDR_COLOR_INPUT = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_HDR_COLOR_INPUT);
     key.FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_LOW_RES_MOTION_VECTORS);
     key.FFX_FSR2_OPTION_JITTERED_MOTION_VECTORS = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_JITTER_MOTION_VECTORS);
@@ -135,73 +134,33 @@ Fsr2ShaderBlobVK fsr2GetAutogenReactivePassPermutationBlobByIndex(uint32_t permu
     return POPULATE_SHADER_BLOB(g_ffx_fsr2_autogen_reactive_pass_PermutationInfo, tableIndex);
 }
 
-FfxErrorCode fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions, Fsr2ShaderBlobVK* outBlob)
+Fsr2ShaderBlobVK fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions)
 {
     switch (passId) {
 
     case FFX_FSR2_PASS_PREPARE_INPUT_COLOR:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetPrepareInputColorPassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetPrepareInputColorPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_DEPTH_CLIP:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetDepthClipPassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetDepthClipPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_RECONSTRUCT_PREVIOUS_DEPTH:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetReconstructPreviousDepthPassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetReconstructPreviousDepthPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_LOCK:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetLockPassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetLockPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_ACCUMULATE:
     case FFX_FSR2_PASS_ACCUMULATE_SHARPEN:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetAccumulatePassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetAccumulatePassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_RCAS:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetRCASPassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetRCASPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_COMPUTE_LUMINANCE_PYRAMID:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetComputeLuminancePyramidPassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetComputeLuminancePyramidPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_GENERATE_REACTIVE:
-    {
-        Fsr2ShaderBlobVK blob = fsr2GetAutogenReactivePassPermutationBlobByIndex(permutationOptions);
-        memcpy(outBlob, &blob, sizeof(Fsr2ShaderBlobVK));
-        return FFX_OK;
-    }
-
+        return fsr2GetAutogenReactivePassPermutationBlobByIndex(permutationOptions);
     default:
         FFX_ASSERT_FAIL("Should never reach here.");
         break;
     }
 
     // return an empty blob
-    memset(outBlob, 0, sizeof(Fsr2ShaderBlobVK));
-    return FFX_OK;
+    Fsr2ShaderBlobVK emptyBlob = {};
+    return emptyBlob;
 }
