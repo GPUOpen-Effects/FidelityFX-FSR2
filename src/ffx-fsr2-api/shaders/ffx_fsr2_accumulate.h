@@ -182,6 +182,7 @@ void Accumulate(FfxInt32x2 iPxHrPos)
     const FfxFloat32x2 fDilatedReactiveMasks = SampleDilatedReactiveMasks(fLrUvJittered);
     const FfxFloat32 fReactiveMax = fDilatedReactiveMasks.x;
     const FfxFloat32 fAccumulationMask = fDilatedReactiveMasks.y;
+    const FfxBoolean bIsResetFrame = (0 == FrameIndex());
 
     FfxFloat32x4 fHistoryColorAndWeight = FfxFloat32x4(0, 0, 0, 0);
     FfxFloat32x3 fLockStatus;
@@ -191,7 +192,7 @@ void Accumulate(FfxInt32x2 iPxHrPos)
     FfxFloat32x2 fReprojectedHrUv = FfxFloat32x2(0, 0);
     ComputeReprojectedUVs(iPxHrPos, fMotionVector, fReprojectedHrUv, bIsExistingSample);
 
-    if (bIsExistingSample) {
+    if (bIsExistingSample && !bIsResetFrame) {
         ReprojectHistoryColor(iPxHrPos, fReprojectedHrUv, fHistoryColorAndWeight);
         ReprojectHistoryLockStatus(iPxHrPos, fReprojectedHrUv, fLockStatus);
     }

@@ -1,4 +1,4 @@
-FidelityFX Super Resolution 2.1
+FidelityFX Super Resolution 2.1.1
 =================================
 
 Features
@@ -20,6 +20,7 @@ Changes
 - Various documentation edits for spelling.
 - Clarified the frame delta time input value within the readme documentation.
 - Fixed issue with bad memset within the shader blob selection logic.
+- Fix issue with reprojection data on a reset.
 
 Limitations
 -----------
