@@ -179,7 +179,7 @@ static float halton(int32_t index, int32_t base)
     return result;
 }
 
-static FfxErrorCode patchResourceBindings(FfxPipelineState* inoutPipeline)
+static FfxErrorCode patchResourceBindingsAndPassId(FfxPipelineState* inoutPipeline, FfxFsr2Pass pass)
 {
     for (uint32_t srvIndex = 0; srvIndex < inoutPipeline->srvCount; ++srvIndex)
     {
@@ -223,6 +223,8 @@ static FfxErrorCode patchResourceBindings(FfxPipelineState* inoutPipeline)
         inoutPipeline->cbResourceBindings[cbIndex].resourceIdentifier = cbResourceBindingTable[mapIndex].index;
     }
 
+    inoutPipeline->passId = pass;
+
     return FFX_OK;
 }
 
@@ -263,15 +265,15 @@ static FfxErrorCode createPipelineStates(FfxFsr2Context_Private* context)
     FFX_VALIDATE(context->contextDescription.callbacks.fpCreatePipeline(&context->contextDescription.callbacks, FFX_FSR2_PASS_GENERATE_REACTIVE, &pipelineDescription, &context->pipelineGenerateReactive));
     
     // for each pipeline: re-route/fix-up IDs based on names
-    patchResourceBindings(&context->pipelinePrepareInputColor);
-    patchResourceBindings(&context->pipelineDepthClip);
-    patchResourceBindings(&context->pipelineReconstructPreviousDepth);
-    patchResourceBindings(&context->pipelineLock);
-    patchResourceBindings(&context->pipelineAccumulate);
-    patchResourceBindings(&context->pipelineComputeLuminancePyramid);
-    patchResourceBindings(&context->pipelineAccumulateSharpen);
-    patchResourceBindings(&context->pipelineRCAS);
-    patchResourceBindings(&context->pipelineGenerateReactive);
+    patchResourceBindingsAndPassId(&context->pipelinePrepareInputColor,        FFX_FSR2_PASS_PREPARE_INPUT_COLOR);
+    patchResourceBindingsAndPassId(&context->pipelineDepthClip,                FFX_FSR2_PASS_DEPTH_CLIP);
+    patchResourceBindingsAndPassId(&context->pipelineReconstructPreviousDepth, FFX_FSR2_PASS_RECONSTRUCT_PREVIOUS_DEPTH);
+    patchResourceBindingsAndPassId(&context->pipelineLock,                     FFX_FSR2_PASS_LOCK);
+    patchResourceBindingsAndPassId(&context->pipelineAccumulate,               FFX_FSR2_PASS_ACCUMULATE);
+    patchResourceBindingsAndPassId(&context->pipelineComputeLuminancePyramid,  FFX_FSR2_PASS_COMPUTE_LUMINANCE_PYRAMID);
+    patchResourceBindingsAndPassId(&context->pipelineAccumulateSharpen,        FFX_FSR2_PASS_ACCUMULATE_SHARPEN);
+    patchResourceBindingsAndPassId(&context->pipelineRCAS,                     FFX_FSR2_PASS_RCAS);
+    patchResourceBindingsAndPassId(&context->pipelineGenerateReactive,         FFX_FSR2_PASS_GENERATE_REACTIVE);
 
     return FFX_OK;
 }

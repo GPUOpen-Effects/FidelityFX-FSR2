@@ -36,38 +36,6 @@ extern "C" {
 
 FFX_FORWARD_DECLARE(FfxFsr2Interface);
 
-/// An enumeration of all the passes which constitute the FSR2 algorithm.
-///
-/// FSR2 is implemented as a composite of several compute passes each
-/// computing a key part of the final result. Each call to the 
-/// <c><i>FfxFsr2ScheduleGpuJobFunc</i></c> callback function will
-/// correspond to a single pass included in <c><i>FfxFsr2Pass</i></c>. For a
-/// more comprehensive description of each pass, please refer to the FSR2
-/// reference documentation.
-///
-/// Please note in some cases e.g.: <c><i>FFX_FSR2_PASS_ACCUMULATE</i></c>
-/// and <c><i>FFX_FSR2_PASS_ACCUMULATE_SHARPEN</i></c> either one pass or the
-/// other will be used (they are mutually exclusive). The choice of which will
-/// depend on the way the <c><i>FfxFsr2Context</i></c> is created and the
-/// precise contents of <c><i>FfxFsr2DispatchParamters</i></c> each time a call
-/// is made to <c><i>ffxFsr2ContextDispatch</i></c>.
-/// 
-/// @ingroup FSR2
-typedef enum FfxFsr2Pass {
-
-    FFX_FSR2_PASS_PREPARE_INPUT_COLOR = 0,                              ///< A pass which prepares input colors for subsequent use.
-    FFX_FSR2_PASS_DEPTH_CLIP = 1,                                       ///< A pass which performs depth clipping.
-    FFX_FSR2_PASS_RECONSTRUCT_PREVIOUS_DEPTH = 2,                       ///< A pass which performs reconstruction of previous frame's depth.
-    FFX_FSR2_PASS_LOCK = 3,                                             ///< A pass which calculates pixel locks.
-    FFX_FSR2_PASS_ACCUMULATE = 4,                                       ///< A pass which performs upscaling.
-    FFX_FSR2_PASS_ACCUMULATE_SHARPEN = 5,                               ///< A pass which performs upscaling when sharpening is used.
-    FFX_FSR2_PASS_RCAS = 6,                                             ///< A pass which performs sharpening.
-    FFX_FSR2_PASS_COMPUTE_LUMINANCE_PYRAMID = 7,                        ///< A pass which generates the luminance mipmap chain for the current frame.
-    FFX_FSR2_PASS_GENERATE_REACTIVE = 8,                                ///< An optional pass to generate a reactive mask
-
-    FFX_FSR2_PASS_COUNT                                                 ///< The number of passes performed by FSR2.
-} FfxFsr2Pass;
-
 /// Create and initialize the backend context.
 ///
 /// The callback function sets up the backend context for rendering.
