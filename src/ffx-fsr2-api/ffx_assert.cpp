@@ -19,8 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#include "ffx_assert.h"
 #include <stdlib.h>  // for malloc()
+#include "ffx_assert.h"
 
 #ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
