@@ -32,6 +32,14 @@
 
 #include "ffx_fsr2_maximum_bias.h"
 
+#ifndef _MSC_VER
+template < typename T, size_t N >
+size_t _countof(T(&arr)[N])
+{
+    return std::extent< T[N] >::value;
+}
+#endif
+
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Wunused-variable"
 #endif
