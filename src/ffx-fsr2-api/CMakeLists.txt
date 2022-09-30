@@ -69,8 +69,13 @@ if(FSR2_VS_VERSION STREQUAL 2015)
     set(CMAKE_VS_WINDOWS_TARGET_PLATFORM_VERSION "10.0.18362.0")
 endif()
 
-set(FFX_SC_EXECUTABLE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../tools/sc/FidelityFX_SC.exe)
+if (WIN32)
+	set(FFX_SC_EXECUTABLE
+    	${CMAKE_CURRENT_SOURCE_DIR}/../../tools/sc/FidelityFX_SC.exe)
+else()
+	set(FFX_SC_EXECUTABLE
+    	${CMAKE_CURRENT_SOURCE_DIR}/../../tools/sc/FidelityFX_SC.sh)
+endif()
 
 set(FFX_SC_BASE_ARGS
     -reflection -deps=gcc -DFFX_GPU=1
