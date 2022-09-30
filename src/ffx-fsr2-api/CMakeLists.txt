@@ -109,14 +109,20 @@ else()
     add_library(ffx_fsr2_api_${FSR2_PLATFORM_NAME}      STATIC ${SOURCES})
 endif()
 
+set(FFX_FSR2_API ffx_fsr2_api_${FSR2_PLATFORM_NAME} PARENT_SCOPE)
+
 # graphics api backends
 if(FFX_FSR2_API_DX12)
     message("Will build FSR2 library: DX12 backend")
     add_subdirectory(dx12)
+
+    set(FFX_FSR2_API_DX12 ffx_fsr2_api_dx12_${FSR2_PLATFORM_NAME} PARENT_SCOPE)
 endif()
 if(FFX_FSR2_API_VK)
     message("Will build FSR2 library: Vulkan backend")
     add_subdirectory(vk)
+
+    set(FFX_FSR2_API_VK ffx_fsr2_api_vk_${FSR2_PLATFORM_NAME} PARENT_SCOPE)
 endif()
 
 # api
