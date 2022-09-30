@@ -51,8 +51,10 @@ else()
     message(FATAL_ERROR "Unsupported target platform - only supporting x64 and Win32 currently")
 endif()
 
-# Embed PDBs in the debug versions of the libs
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Z7")
+if (MSVC)
+	# Embed PDBs in the debug versions of the libs
+	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Z7")
+endif()
 
 # Write both debug and release versions of the static libs to the /lib folder as they are uniquely named
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_HOME_DIRECTORY}/bin/ffx_fsr2_api/)
