@@ -80,7 +80,7 @@ foreach(PASS_SHADER ${PASS_SHADERS})
         # skip 16-bit permutations for the compute luminance pyramid pass
         set(FFX_SC_ARGS ${FFX_SC_BASE_ARGS} ${FFX_SC_VK_BASE_ARGS} ${FFX_SC_PERMUTATION_ARGS} -DFFX_HALF=0)  
     else()
-        set(FFX_SC_ARGS ${FFX_SC_BASE_ARGS} ${FFX_SC_VK_BASE_ARGS} ${FFX_SC_PERMUTATION_ARGS} -DFFX_HALF={0,1})
+        set(FFX_SC_ARGS ${FFX_SC_BASE_ARGS} ${FFX_SC_VK_BASE_ARGS} ${FFX_SC_PERMUTATION_ARGS} '-DFFX_HALF={0,1}')
     endif()
 
     if(USE_DEPFILE)
