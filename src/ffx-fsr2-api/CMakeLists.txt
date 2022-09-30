@@ -41,6 +41,12 @@ if(CMAKE_GENERATOR_PLATFORM STREQUAL "x64" OR CMAKE_EXE_LINKER_FLAGS STREQUAL "/
     set(FSR2_PLATFORM_NAME x64)
 elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "Win32" OR CMAKE_EXE_LINKER_FLAGS STREQUAL "/machine:X86")
     set(FSR2_PLATFORM_NAME x86)
+elseif(CMAKE_SYSTEM_PROCESSOR)
+	set(FSR2_PLATFORM_NAME ${CMAKE_SYSTEM_PROCESSOR})
+	
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+		add_compile_definitions(FFX_GCC)
+	endif()
 else()
     message(FATAL_ERROR "Unsupported target platform - only supporting x64 and Win32 currently")
 endif()

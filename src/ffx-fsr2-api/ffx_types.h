@@ -22,6 +22,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stdlib.h>
 
 #if defined (FFX_GCC)
 /// FidelityFX exported functions
