@@ -22,6 +22,7 @@
 #include <codecvt>  // convert string to wstring
 #include <DirectXMath.h>
 #include <d3d12.h>
+#include <dxgi1_3.h>
 #include <d3dcompiler.h>
 #include <d3d12shader.h>
 #include "d3dx12.h"
@@ -621,7 +622,6 @@ FfxErrorCode CreateBackendContextDX12(FfxFsr2Interface* backendInterface, FfxDev
         dx12Device->AddRef();
         backendContext->device = dx12Device;
     }
-    
     // init resource linked list
     backendContext->nextStaticResource = 1;
     backendContext->nextDynamicResource = FSR2_MAX_RESOURCE_COUNT - 1;
@@ -928,6 +928,43 @@ FfxResourceDescription GetResourceDescriptorDX12(
     return resourceDescription;
 }
 
+static bool isLuidsSame(LUID luid1, LUID luid2)
+{
+	return memcmp(&luid1, &luid2, sizeof(LUID)) == 0;
+}
+
+static bool IsIntelAdapter(ID3D12Device* device)
+{
+	bool isIntel = false;
+
+	IDXGIFactory* pFactory = nullptr;
+	if (SUCCEEDED(CreateDXGIFactory2(0, IID_PPV_ARGS(&pFactory))))
+	{
+		IDXGIAdapter* pAdapter = nullptr;
+		UINT i = 0;
+
+		while (pFactory->EnumAdapters(i++, &pAdapter) != DXGI_ERROR_NOT_FOUND)
+		{
+			DXGI_ADAPTER_DESC desc{};
+
+			if (SUCCEEDED(pAdapter->GetDesc(&desc)))
+			{
+				if (isLuidsSame(desc.AdapterLuid, device->GetAdapterLuid()))
+				{
+					if (desc.VendorId == 0x8086)
+						isIntel = true;
+				}
+
+				pAdapter->Release();
+			}
+		}
+
+		pFactory->Release();
+	}
+
+	return isIntel;
+}
+
 FfxErrorCode CreatePipelineDX12(
     FfxFsr2Interface* backendInterface,
     FfxFsr2Pass pass,
@@ -980,6 +1017,13 @@ FfxErrorCode CreatePipelineDX12(
 
         supportedFP16 = !!(d3d12Options.MinPrecisionSupport & D3D12_SHADER_MIN_PRECISION_SUPPORT_16_BIT);
     }
+
+	if (pass == FFX_FSR2_PASS_ACCUMULATE || pass == FFX_FSR2_PASS_ACCUMULATE_SHARPEN)
+	{
+		// Workaround: Disable FP16 path for the accumulate pass on Intel due to a clamping error.
+		if (IsIntelAdapter(dx12Device))
+			supportedFP16 = false;
+	}
 
     // work out what permutation to load.
     uint32_t flags = 0;
