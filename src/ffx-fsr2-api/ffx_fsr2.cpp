@@ -331,7 +331,7 @@ static FfxErrorCode fsr2Create(FfxFsr2Context_Private* context, const FfxFsr2Con
     const Fsr2ResourceDescription internalSurfaceDesc[] = {
 
         {   FFX_FSR2_RESOURCE_IDENTIFIER_PREPARED_INPUT_COLOR, L"FSR2_PreparedInputColor", FFX_RESOURCE_USAGE_UAV,
-            FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT, contextDescription->maxRenderSize.width, contextDescription->maxRenderSize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },
+            FFX_SURFACE_FORMAT_R16G16B16A16_UNORM, contextDescription->maxRenderSize.width, contextDescription->maxRenderSize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },
 
         {   FFX_FSR2_RESOURCE_IDENTIFIER_RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH, L"FSR2_ReconstructedPrevNearestDepth", FFX_RESOURCE_USAGE_UAV,
             FFX_SURFACE_FORMAT_R32_UINT, contextDescription->maxRenderSize.width, contextDescription->maxRenderSize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },

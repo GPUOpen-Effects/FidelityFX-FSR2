@@ -221,7 +221,7 @@ layout (set = 0, binding = 1) uniform sampler s_LinearClamp;
 	layout (set = 1, binding = FSR2_BIND_UAV_DEPTH_CLIP, r32f)                        uniform image2D    rw_depth_clip;
 #endif
 #if defined FSR2_BIND_UAV_PREPARED_INPUT_COLOR
-	layout (set = 1, binding = FSR2_BIND_UAV_PREPARED_INPUT_COLOR, rgba32f)           uniform image2D    rw_prepared_input_color;
+	layout (set = 1, binding = FSR2_BIND_UAV_PREPARED_INPUT_COLOR, rgba16)            uniform image2D    rw_prepared_input_color;
 #endif
 #if defined FSR2_BIND_UAV_LUMA_HISTORY
 	layout (set = 1, binding = FSR2_BIND_UAV_LUMA_HISTORY, rgba32f)                   uniform image2D    rw_luma_history;

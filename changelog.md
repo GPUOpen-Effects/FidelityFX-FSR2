@@ -1,3 +1,7 @@
+2022-10-10 | FidelityFX Super Resolution 2.1.2
+-------
+- Fix resource precision issue.
+- Clamp coordinates in software sampling logic.
 
 2022-09-13 | FidelityFX Super Resolution 2.1.1
 -------

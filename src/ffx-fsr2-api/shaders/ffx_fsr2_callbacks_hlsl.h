@@ -234,26 +234,26 @@ SamplerState s_LinearClamp : register(s1);
 
 // SRVs
 #if defined(FFX_INTERNAL)
-    Texture2D<FfxFloat32x4>                       r_input_color_jittered                  : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_COLOR);
-    Texture2D<FfxFloat32x4>                       r_motion_vectors                        : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_MOTION_VECTORS);
-    Texture2D<FfxFloat32>                         r_depth                                 : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_DEPTH);
-    Texture2D<FfxFloat32x2>                       r_exposure                              : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_EXPOSURE);
-    Texture2D<FfxFloat32>                         r_reactive_mask                         : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_REACTIVE_MASK);
-    Texture2D<FfxFloat32>                         r_transparency_and_composition_mask     : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_TRANSPARENCY_AND_COMPOSITION_MASK);
-    Texture2D<FfxUInt32>                          r_reconstructed_previous_nearest_depth  : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH);
-    Texture2D<FfxFloat32x2>                       r_dilated_motion_vectors                : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_MOTION_VECTORS);
-    Texture2D<FfxFloat32>                         r_dilatedDepth                          : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_DEPTH);
-    Texture2D<FfxFloat32x4>                       r_internal_upscaled_color               : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INTERNAL_UPSCALED_COLOR);
-    Texture2D<FfxFloat32x3>                       r_lock_status                           : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS);
-    Texture2D<FfxFloat32>                         r_depth_clip                            : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DEPTH_CLIP);
-    Texture2D<FfxFloat32x4>                       r_prepared_input_color                  : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_PREPARED_INPUT_COLOR);
-    Texture2D<unorm FfxFloat32x4>                 r_luma_history                          : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_LUMA_HISTORY);
-    Texture2D<FfxFloat32x4>                       r_rcas_input                            : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_RCAS_INPUT);
-    Texture2D<FfxFloat32>                         r_lanczos_lut                           : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_LANCZOS_LUT);
-    Texture2D<FfxFloat32>                         r_imgMips                               : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_AUTO_EXPOSURE);
-    Texture2D<FfxFloat32>                         r_upsample_maximum_bias_lut             : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTITIER_UPSAMPLE_MAXIMUM_BIAS_LUT);
-    Texture2D<FfxFloat32x2>                       r_dilated_reactive_masks                : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_REACTIVE_MASKS);
-    Texture2D<FfxFloat32x4>                       r_debug_out                             : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DEBUG_OUTPUT);
+    Texture2D<FfxFloat32x4>                       r_input_color_jittered                    : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_COLOR);
+    Texture2D<FfxFloat32x4>                       r_motion_vectors                          : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_MOTION_VECTORS);
+    Texture2D<FfxFloat32>                         r_depth                                   : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_DEPTH);
+    Texture2D<FfxFloat32x2>                       r_exposure                                : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_EXPOSURE);
+    Texture2D<FfxFloat32>                         r_reactive_mask                           : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_REACTIVE_MASK);
+    Texture2D<FfxFloat32>                         r_transparency_and_composition_mask       : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_TRANSPARENCY_AND_COMPOSITION_MASK);
+    Texture2D<FfxUInt32>                          r_reconstructed_previous_nearest_depth    : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH);
+    Texture2D<FfxFloat32x2>                       r_dilated_motion_vectors                  : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_MOTION_VECTORS);
+    Texture2D<FfxFloat32>                         r_dilatedDepth                            : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_DEPTH);
+    Texture2D<FfxFloat32x4>                       r_internal_upscaled_color                 : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_INTERNAL_UPSCALED_COLOR);
+    Texture2D<FfxFloat32x3>                       r_lock_status                             : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS);
+    Texture2D<FfxFloat32>                         r_depth_clip                              : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DEPTH_CLIP);
+    Texture2D<unorm FfxFloat32x4>                 r_prepared_input_color                    : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_PREPARED_INPUT_COLOR);
+    Texture2D<unorm FfxFloat32x4>                 r_luma_history                            : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_LUMA_HISTORY);
+    Texture2D<FfxFloat32x4>                       r_rcas_input                              : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_RCAS_INPUT);
+    Texture2D<FfxFloat32>                         r_lanczos_lut                             : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_LANCZOS_LUT);
+    Texture2D<FfxFloat32>                         r_imgMips                                 : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_AUTO_EXPOSURE);
+    Texture2D<FfxFloat32>                         r_upsample_maximum_bias_lut               : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTITIER_UPSAMPLE_MAXIMUM_BIAS_LUT);
+    Texture2D<FfxFloat32x2>                       r_dilated_reactive_masks                  : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_REACTIVE_MASKS);
+    Texture2D<FfxFloat32x4>                       r_debug_out                               : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_DEBUG_OUTPUT);
 
     // declarations not current form, no accessor functions
     Texture2D<FfxFloat32x4>                       r_transparency_mask                     : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_TRANSPARENCY_MASK);
@@ -275,15 +275,15 @@ SamplerState s_LinearClamp : register(s1);
     Texture2D<FfxFloat32x4>                       r_motion_vectors_reflection             : FFX_FSR2_DECLARE_SRV(FFX_FSR2_RESOURCE_IDENTIFIER_VELOCITY_REFLECTION);
 
     // UAV declarations
-    RWTexture2D<FfxUInt32>                        rw_reconstructed_previous_nearest_depth : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH);
-    RWTexture2D<FfxFloat32x2>                     rw_dilated_motion_vectors               : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_MOTION_VECTORS);
-    RWTexture2D<FfxFloat32>                       rw_dilatedDepth                         : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_DEPTH);
-    RWTexture2D<FfxFloat32x4>                     rw_internal_upscaled_color              : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_INTERNAL_UPSCALED_COLOR);
-    RWTexture2D<FfxFloat32x3>                     rw_lock_status                          : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS);
-    RWTexture2D<FfxFloat32>                       rw_depth_clip                           : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_DEPTH_CLIP);
-    RWTexture2D<FfxFloat32x4>                     rw_prepared_input_color                 : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_PREPARED_INPUT_COLOR);
-    RWTexture2D<unorm FfxFloat32x4>               rw_luma_history                         : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_LUMA_HISTORY);
-    RWTexture2D<FfxFloat32x4>                     rw_upscaled_output                      : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_UPSCALED_OUTPUT);
+    RWTexture2D<FfxUInt32>                        rw_reconstructed_previous_nearest_depth   : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_RECONSTRUCTED_PREVIOUS_NEAREST_DEPTH);
+    RWTexture2D<FfxFloat32x2>                     rw_dilated_motion_vectors                 : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_MOTION_VECTORS);
+    RWTexture2D<FfxFloat32>                       rw_dilatedDepth                           : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_DEPTH);
+    RWTexture2D<FfxFloat32x4>                     rw_internal_upscaled_color                : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_INTERNAL_UPSCALED_COLOR);
+    RWTexture2D<FfxFloat32x3>                     rw_lock_status                            : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS);
+    RWTexture2D<FfxFloat32>                       rw_depth_clip                             : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_DEPTH_CLIP);
+    RWTexture2D<unorm FfxFloat32x4>               rw_prepared_input_color                   : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_PREPARED_INPUT_COLOR);
+    RWTexture2D<unorm FfxFloat32x4>               rw_luma_history                           : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_LUMA_HISTORY);
+    RWTexture2D<FfxFloat32x4>                     rw_upscaled_output                        : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_UPSCALED_OUTPUT);
 
     globallycoherent RWTexture2D<FfxFloat32>      rw_img_mip_shading_change               : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_AUTO_EXPOSURE_MIPMAP_SHADING_CHANGE);
     globallycoherent RWTexture2D<FfxFloat32>      rw_img_mip_5                            : FFX_FSR2_DECLARE_UAV(FFX_FSR2_RESOURCE_IDENTIFIER_AUTO_EXPOSURE_MIPMAP_5);
@@ -330,7 +330,7 @@ SamplerState s_LinearClamp : register(s1);
         Texture2D<FfxFloat32>                     r_depth_clip                            : FFX_FSR2_DECLARE_SRV(FSR2_BIND_SRV_DEPTH_CLIP);
     #endif
     #if defined FSR2_BIND_SRV_PREPARED_INPUT_COLOR
-        Texture2D<FfxFloat32x4>                   r_prepared_input_color                  : FFX_FSR2_DECLARE_SRV(FSR2_BIND_SRV_PREPARED_INPUT_COLOR);
+        Texture2D<unorm FfxFloat32x4>             r_prepared_input_color                    : FFX_FSR2_DECLARE_SRV(FSR2_BIND_SRV_PREPARED_INPUT_COLOR);
     #endif
     #if defined FSR2_BIND_SRV_LUMA_HISTORY
         Texture2D<unorm FfxFloat32x4>             r_luma_history                          : FFX_FSR2_DECLARE_SRV(FSR2_BIND_SRV_LUMA_HISTORY);
@@ -371,7 +371,7 @@ SamplerState s_LinearClamp : register(s1);
         RWTexture2D<FfxFloat32>                   rw_depth_clip                           : FFX_FSR2_DECLARE_UAV(FSR2_BIND_UAV_DEPTH_CLIP);
     #endif
     #if defined FSR2_BIND_UAV_PREPARED_INPUT_COLOR
-        RWTexture2D<FfxFloat32x4>                 rw_prepared_input_color                 : FFX_FSR2_DECLARE_UAV(FSR2_BIND_UAV_PREPARED_INPUT_COLOR);
+        RWTexture2D<unorm FfxFloat32x4>           rw_prepared_input_color                   : FFX_FSR2_DECLARE_UAV(FSR2_BIND_UAV_PREPARED_INPUT_COLOR);
     #endif
     #if defined FSR2_BIND_UAV_LUMA_HISTORY
         RWTexture2D<unorm FfxFloat32x4>           rw_luma_history                         : FFX_FSR2_DECLARE_UAV(FSR2_BIND_UAV_LUMA_HISTORY);
