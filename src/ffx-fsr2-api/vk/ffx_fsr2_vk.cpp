@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#define fsr2GetPermutationBlobByIndex fsr2GetPermutationBlobByIndexVK
+
 #include "../ffx_fsr2.h"
 #include "ffx_fsr2_vk.h"
 #include "shaders/ffx_fsr2_shaders_vk.h"  // include all the precompiled VK shaders for the FSR2 passes
@@ -282,8 +284,6 @@ VkFormat getVKFormatFromSurfaceFormat(FfxSurfaceFormat fmt)
         return VK_FORMAT_R32G32B32A32_SFLOAT;
     case(FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT):
         return VK_FORMAT_R16G16B16A16_SFLOAT;
-    case(FFX_SURFACE_FORMAT_R16G16B16A16_UNORM):
-        return VK_FORMAT_R16G16B16A16_UNORM;
     case(FFX_SURFACE_FORMAT_R32G32_FLOAT):
         return VK_FORMAT_R32G32_SFLOAT;
     case(FFX_SURFACE_FORMAT_R32_UINT):
@@ -409,8 +409,6 @@ FfxSurfaceFormat ffxGetSurfaceFormatVK(VkFormat fmt)
         return FFX_SURFACE_FORMAT_R32G32B32A32_FLOAT;
     case(VK_FORMAT_R16G16B16A16_SFLOAT):
         return FFX_SURFACE_FORMAT_R16G16B16A16_FLOAT;
-    case(VK_FORMAT_R16G16B16A16_UNORM):
-        return FFX_SURFACE_FORMAT_R16G16B16A16_UNORM;
     case(VK_FORMAT_R32G32_SFLOAT):
         return FFX_SURFACE_FORMAT_R32G32_FLOAT;
     case(VK_FORMAT_R32_UINT):

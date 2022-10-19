@@ -19,6 +19,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+#define fsr2GetPermutationBlobByIndex fsr2GetPermutationBlobByIndexVK
+
 #include "ffx_fsr2_shaders_vk.h"
 
 #include "ffx_fsr2_autogen_reactive_pass_permutations.h"
