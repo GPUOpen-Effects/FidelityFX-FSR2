@@ -46,10 +46,10 @@ FfxFloat32 GetUpsampleLanczosWeight(FfxFloat32x2 fSrcSampleOffset, FfxFloat32x2 
     FfxFloat32x2 fSrcSampleOffsetBiased = fSrcSampleOffset * fKernelWeight;
 #if FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 0 // LANCZOS_TYPE_REFERENCE
     FfxFloat32 fSampleWeight = Lanczos2(length(fSrcSampleOffsetBiased));
-#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 1 // LANCZOS_TYPE_LUT
-    FfxFloat32 fSampleWeight = Lanczos2_UseLUT(length(fSrcSampleOffsetBiased));
-#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 2 // LANCZOS_TYPE_APPROXIMATE
+#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 1 // LANCZOS_TYPE_APPROXIMATE
     FfxFloat32 fSampleWeight = Lanczos2ApproxSq(dot(fSrcSampleOffsetBiased, fSrcSampleOffsetBiased));
+#elif FFX_FSR2_OPTION_UPSAMPLE_USE_LANCZOS_TYPE == 2 // LANCZOS_TYPE_LUT
+    FfxFloat32 fSampleWeight = Lanczos2_UseLUT(length(fSrcSampleOffsetBiased));
 #else
 #error "Invalid Lanczos type"
 #endif
