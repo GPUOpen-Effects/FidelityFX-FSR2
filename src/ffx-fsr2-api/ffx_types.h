@@ -44,7 +44,15 @@
 #define FFX_MAX_CONST_SIZE          64
 
 /// Off by default warnings
+#if defined(_MSC_VER)
 #pragma warning(disable : 4365 4710 4820 5039)
+#elif defined(__clang__)
+#pragma clang diagnostic ignored "-Wunused-parameter"
+#pragma clang diagnostic ignored "-Wmissing-field-initializers"
+#pragma clang diagnostic ignored "-Wsign-compare"
+#pragma clang diagnostic ignored "-Wunused-function"
+#pragma clang diagnostic ignored "-Wignored-qualifiers"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
