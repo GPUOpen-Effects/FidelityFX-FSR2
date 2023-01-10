@@ -94,7 +94,7 @@ static const ResourceBinding uavResourceBindingTable[] =
     {FFX_FSR2_RESOURCE_IDENTIFIER_DILATED_REACTIVE_MASKS,                  L"rw_dilated_reactive_masks"},
     {FFX_FSR2_RESOURCE_IDENTIFIER_EXPOSURE,                                L"rw_exposure"},
     {FFX_FSR2_RESOURCE_IDENTIFIER_SPD_ATOMIC_COUNT,                        L"rw_spd_global_atomic"},
-#if defined(FFX_INTERNAL)                                                  
+#if defined(FFX_INTERNAL)
     {FFX_FSR2_RESOURCE_IDENTIFIER_DEBUG_OUTPUT,                            L"rw_debug_out"},
 #endif
 };
@@ -166,7 +166,7 @@ FfxConstantBuffer globalFsr2ConstantBuffers[3] = {
 // Lanczos
 static float lanczos2(float value)
 {
-    return abs(value) < FFX_EPSILON ? 1.f : (sinf(FFX_PI * value) / (FFX_PI * value)) * (sinf(0.5f * FFX_PI * value) / (0.5f * FFX_PI * value));
+    return std::abs(value) < FFX_EPSILON ? 1.f : (sinf(FFX_PI * value) / (FFX_PI * value)) * (sinf(0.5f * FFX_PI * value) / (0.5f * FFX_PI * value));
 }
 
 // Calculate halton number for index and base.
@@ -266,7 +266,7 @@ static FfxErrorCode createPipelineStates(FfxFsr2Context_Private* context)
     FFX_VALIDATE(context->contextDescription.callbacks.fpCreatePipeline(&context->contextDescription.callbacks, FFX_FSR2_PASS_ACCUMULATE, &pipelineDescription, &context->pipelineAccumulate));
     FFX_VALIDATE(context->contextDescription.callbacks.fpCreatePipeline(&context->contextDescription.callbacks, FFX_FSR2_PASS_ACCUMULATE_SHARPEN, &pipelineDescription, &context->pipelineAccumulateSharpen));
     FFX_VALIDATE(context->contextDescription.callbacks.fpCreatePipeline(&context->contextDescription.callbacks, FFX_FSR2_PASS_GENERATE_REACTIVE, &pipelineDescription, &context->pipelineGenerateReactive));
-    
+
     // for each pipeline: re-route/fix-up IDs based on names
     patchResourceBindings(&context->pipelinePrepareInputColor);
     patchResourceBindings(&context->pipelineDepthClip);
@@ -349,7 +349,7 @@ static FfxErrorCode fsr2Create(FfxFsr2Context_Private* context, const FfxFsr2Con
 
         {   FFX_FSR2_RESOURCE_IDENTIFIER_DEPTH_CLIP, L"FSR2_DepthClip", FFX_RESOURCE_USAGE_UAV,
             FFX_SURFACE_FORMAT_R8_UNORM, contextDescription->maxRenderSize.width, contextDescription->maxRenderSize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },
-            
+
         {   FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS_1, L"FSR2_LockStatus1", (FfxResourceUsage)(FFX_RESOURCE_USAGE_RENDERTARGET | FFX_RESOURCE_USAGE_UAV),
             FFX_SURFACE_FORMAT_R11G11B10_FLOAT, contextDescription->displaySize.width, contextDescription->displaySize.height, 1, FFX_RESOURCE_FLAGS_NONE },
 
@@ -510,7 +510,7 @@ static void scheduleDispatch(FfxFsr2Context_Private* context, const FfxFsr2Dispa
             jobDescriptor.uavMip[currentUnorderedAccessViewIndex] = 0;
         }
     }
-    
+
     jobDescriptor.dimensions[0] = dispatchX;
     jobDescriptor.dimensions[1] = dispatchY;
     jobDescriptor.dimensions[2] = 1;
@@ -591,7 +591,7 @@ static FfxErrorCode fsr2Dispatch(FfxFsr2Context_Private* context, const FfxFsr2D
             context->contextDescription.callbacks.fpRegisterResource(&context->contextDescription.callbacks, &params->exposure, &context->srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_EXPOSURE]);
         }
     }
- 
+
     if (ffxFsr2ResourceIsNull(params->reactive)) {
         context->srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_INPUT_REACTIVE_MASK] = context->srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_INTERNAL_DEFAULT_REACTIVITY];
     } else {
