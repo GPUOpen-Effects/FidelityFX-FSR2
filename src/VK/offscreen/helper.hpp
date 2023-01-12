@@ -1,10 +1,36 @@
 #pragma once
 #define TINYEXR_IMPLEMENTATION
 #include <tinyexr.h>
-
+#include <FindFiles.h>
 #include <iostream>
 
-std::vector<float> read_image_exr(const std::string& file_path, int& w, int& h,int channel) {
+struct config
+{
+    std::vector<std::string> file_list;
+    std::string input_path = "";
+    std::string motion_depth_path = "";
+    std::string out_path = "";
+    float scale_motion_x = 1.0f;
+    float scale_motion_y = 1.0f;
+    float scale_depth = 1.0f;
+    double deltaTime = 33.3f;
+    int outWidth = 1;
+    int outHeight = 1;
+    bool reset = false;
+    bool enableJitter = false;
+};
+
+bool get_files(std::vector<std::string>& fileNames, std::string& input_path)
+{
+    FindFiles finder;
+    fileNames = finder.findFiles(input_path.c_str());
+    if (fileNames.empty()) return false;
+    std::sort(fileNames.begin(), fileNames.end());
+    return true;
+}
+
+std::vector<float> read_image_exr(const std::string& file_path, int& w, int& h,int channel) 
+{
     float* data = nullptr;
     const char* err = nullptr;
     int ret = LoadEXR(&data, &w, &h, file_path.c_str(), &err);
@@ -19,7 +45,8 @@ std::vector<float> read_image_exr(const std::string& file_path, int& w, int& h,i
 }
 
 void write_exr(const std::string& _file_path, std::vector<float> &data, int w, int h, int _channels=4,
-    bool use_half = false) {
+    bool use_half = false) 
+{
     if (data.empty())
         return;
     std::string file_path = _file_path;

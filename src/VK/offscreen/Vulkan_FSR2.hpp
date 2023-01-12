@@ -111,9 +111,9 @@ inline VkPipelineStageFlags pipelineStageForLayout(VkImageLayout layout) {
 
 class Vulkan_FSR2 {
 public:
-    void run(std::vector<std::string>& file_list,std::string input_file_c, std::string input_file_md, std::string out_path) {
+    void run(config& config_) {
         initVulkan();
-        copy_work(file_list,input_file_c, input_file_md, out_path);
+        FSR2(config_);
         cleanup();
     }
 
@@ -152,10 +152,12 @@ private:
     //fsr2 stuff
     FfxFsr2ContextDescription   initializationParameters = {};
     FfxFsr2Context              context;
-    double m_deltaTime;
+    double deltaTime;
     float scale_motion_x = 1.0f;
     float scale_motion_y = 1.0f;
     float scale_depth = 1.0f;
+    bool reset = false;
+    bool enableJitter = false;
 
     //-----------
 
@@ -923,7 +925,7 @@ private:
         Fsr2_depth_ImageView = createImageView(Fsr2_depth, VK_FORMAT_D32_SFLOAT, VK_IMAGE_ASPECT_DEPTH_BIT, mipLevels_fsr);
     }
 
-    void DownloadFSR2Image(int index, std::string output_path, int& texWidth, int& texHeight, int& texChannels, VkImage& Fsr2_input_Image, VkDeviceMemory& Fsr2_input_ImageMemory)
+    void DownloadFSR2Image(std::string &index, std::string &output_path, int& texWidth, int& texHeight, int& texChannels, VkImage& Fsr2_input_Image, VkDeviceMemory& Fsr2_input_ImageMemory)
     {
         VkDeviceSize imageSize = texWidth * texHeight * sizeof(float) * texChannels;
         //mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
@@ -948,7 +950,7 @@ private:
         vkFreeMemory(device, stagingBufferMemory, nullptr);
 
         //work with the vector
-        std::string file_name = std::to_string(index) + ".exr";
+        std::string file_name = "result_" + index + ".exr";
         std::string output_exr = output_path + file_name;
 
         write_exr(output_exr, data_float, texWidth, texHeight, texChannels, false);
@@ -982,9 +984,8 @@ private:
 
         ffxFsr2ContextCreate(&context, &initializationParameters);
     }
-    void Fsr2_work_OnRender(uint32_t m_index,uint32_t renderWidth, uint32_t renderHeight, uint32_t displayWidth, uint32_t displayHeight)
+    void Fsr2_work_OnRender(uint32_t index,uint32_t renderWidth, uint32_t renderHeight, uint32_t displayWidth, uint32_t displayHeight)
     {
-        m_deltaTime = 33.3f;//33.3f for 30fps,if running at 60fps, the value passed should be around 16.6f.
         VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
         FfxFsr2DispatchDescription dispatchParameters = {};
@@ -999,21 +1000,30 @@ private:
         //no transparency and compositon
         dispatchParameters.transparencyAndComposition = ffxGetTextureResourceVK(&context, nullptr, nullptr, 1, 1, VK_FORMAT_UNDEFINED, L"FSR2_EmptyTransparencyAndCompositionMap");
 
+        float JitterX = 0.0f;
+        float JitterY = 0.0f;
+
+        if (enableJitter)
+        {
+            const int32_t jitterPhaseCount = ffxFsr2GetJitterPhaseCount(renderWidth, displayWidth);
+            ffxFsr2GetJitterOffset(&JitterX, &JitterY, index, jitterPhaseCount);
+        }
+
         dispatchParameters.output = ffxGetTextureResourceVK(&context, Fsr2_out_Image, Fsr2_out_ImageView, displayWidth, displayHeight, VK_FORMAT_R32G32B32A32_SFLOAT, L"FSR2_OutputUpscaledColor", FFX_RESOURCE_STATE_UNORDERED_ACCESS);
-        dispatchParameters.jitterOffset.x = 0.0f;
-        dispatchParameters.jitterOffset.y = 0.0f;
+        dispatchParameters.jitterOffset.x = JitterX;
+        dispatchParameters.jitterOffset.y = JitterY;
         dispatchParameters.motionVectorScale.x = (float)renderWidth;
         dispatchParameters.motionVectorScale.y = (float)renderHeight;
-        dispatchParameters.reset = false;
+        dispatchParameters.reset = reset;
         dispatchParameters.enableSharpening = false;
         dispatchParameters.sharpness = 0.0f;
-        dispatchParameters.frameTimeDelta = (float)m_deltaTime;
+        dispatchParameters.frameTimeDelta = (float)deltaTime;
         dispatchParameters.preExposure = 1.0f;
         dispatchParameters.renderSize.width = renderWidth;
         dispatchParameters.renderSize.height = renderHeight;
         dispatchParameters.cameraFar = 0.01f;
         dispatchParameters.cameraNear = 1e8;
-        dispatchParameters.cameraFovAngleVertical = 1.56f;
+        dispatchParameters.cameraFovAngleVertical = 1.56f;//fov 90бу
 
 
         FfxErrorCode errorCode = ffxFsr2ContextDispatch(&context, &dispatchParameters);
@@ -1021,7 +1031,7 @@ private:
 
         endSingleTimeCommands(commandBuffer);
     }
-    void Fsr2_work(std::string output_path, int index, std::vector<std::string>& color_list, std::vector<std::string>& motionVector_list,
+    void Fsr2_work(std::string &output_path, std::vector<std::string> &filenames,int index, std::vector<std::string>& color_list, std::vector<std::string>& motionVector_list,
         uint32_t renderWidth,
         uint32_t renderHeight,
         uint32_t displayWidth,
@@ -1039,11 +1049,18 @@ private:
 
             int width = displayWidth;
             int height = displayHeight;
-            DownloadFSR2Image(i, output_path, width, height, outChannels, Fsr2_out_Image, Fsr2_out_ImageMemory);
+            std::string file_name = filenames[i - 1];
+            int suffix_pos = file_name.find(".exr");
+            if (suffix_pos != file_name.npos)
+            {
+                file_name = file_name.substr(0, suffix_pos);
+            }
+
+            DownloadFSR2Image(file_name, output_path, width, height, outChannels, Fsr2_out_Image, Fsr2_out_ImageMemory);
 
             cost_time = clock() - (render_cost_time + cost_time);
-            
-            printf("(%d / %d) done. render cost %f s, download image cost %f s.\n", i, color_list.size(), (float)((float)render_cost_time / CLOCKS_PER_SEC), (float)((float)cost_time / CLOCKS_PER_SEC));
+            printf("%s ",filenames[i - 1].c_str());
+            printf("(%d / %d) done. render cost %f s, download image cost %f s.\n", i, (int)color_list.size(), (float)((float)render_cost_time / CLOCKS_PER_SEC), (float)((float)cost_time / CLOCKS_PER_SEC));
             
             if (i == color_list.size()) break;
 
@@ -1058,21 +1075,22 @@ private:
         }
     }
 
-    void copy_work(std::vector<std::string> &file_list,std::string &input_path_color, std::string &input_path_motionDepth, std::string &output_path)
+    void FSR2(config& config_)
     {
         std::vector<std::string> source_list_color;
         std::vector<std::string> source_list_motionDepth;
-        for (int i = 0; i < file_list.size(); i++)
+        for (int i = 0; i < config_.file_list.size(); i++)
         {
-            std::string file_name = file_list[i];
-            std::string color_path = input_path_color + file_name;
-            std::string MotionDepth_path = input_path_motionDepth + file_name;
+            std::string file_name = config_.file_list[i];
+            std::string color_path = config_.input_path + file_name;
+            std::string MotionDepth_path = config_.motion_depth_path + file_name;
             source_list_color.push_back(color_path);
             source_list_motionDepth.push_back(MotionDepth_path);
         }
-        scale_motion_x = -0.5f;
-        scale_motion_y = 0.5f;
-        scale_depth = 1000.0f;
+        scale_motion_x = config_.scale_motion_x;
+        scale_motion_y = config_.scale_motion_y;
+        scale_depth = config_.scale_depth;
+        deltaTime = config_.deltaTime;
 
         printf("hello,I'm ready to go!\n");
         int texWidth, texHeight;
@@ -1085,15 +1103,17 @@ private:
 
         //Let's do it!
         int outWidth, outHeight, outChannels;
-        outWidth = 3840;
-        outHeight = 2160;
+        outWidth = config_.outWidth;
+        outHeight = config_.outHeight;
         outChannels = texChannels;
+        enableJitter = config_.enableJitter;
+        reset = config_.reset;
 
         //create output result
         createImage(outWidth, outHeight, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, Fsr2_out_Image, Fsr2_out_ImageMemory);
         Fsr2_out_ImageView = createImageView(Fsr2_out_Image, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
-        Fsr2_work(output_path, 1, source_list_color, source_list_motionDepth, texWidth, texHeight, outWidth, outHeight, outChannels, true, false);
+        Fsr2_work(config_.out_path, config_.file_list, 1, source_list_color, source_list_motionDepth, texWidth, texHeight, outWidth, outHeight, outChannels, true, false);
 
         printf("I am done.\n");
     }
