@@ -720,9 +720,11 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
             deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
             deviceProperties2.pNext = &subgroupSizeControlProperties;
             vkGetPhysicalDeviceProperties2(context->physicalDevice, &deviceProperties2);
-
-            deviceCapabilities->waveLaneCountMin = subgroupSizeControlProperties.minSubgroupSize;
-            deviceCapabilities->waveLaneCountMax = subgroupSizeControlProperties.maxSubgroupSize;
+		
+			if (subgroupSizeControlProperties.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT) {
+            	deviceCapabilities->waveLaneCountMin = subgroupSizeControlProperties.minSubgroupSize;
+            	deviceCapabilities->waveLaneCountMax = subgroupSizeControlProperties.maxSubgroupSize;
+			}
         }
         if (strcmp(backendContext->extensionProperties[i].extensionName, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) == 0)
         {
