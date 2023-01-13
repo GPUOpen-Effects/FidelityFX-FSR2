@@ -1,4 +1,4 @@
-# FidelityFX Super Resolution 2.1 (FSR 2.1) 
+# FidelityFX Super Resolution 2.1 (FSR 2.1.2)
 
 Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
 
