@@ -135,7 +135,7 @@ typedef struct BackendContext_VK {
     VkPhysicalDevice        physicalDevice = nullptr;
     VkDevice                device = nullptr;
     VkFunctionTable         vkFunctionTable = {};
-                            
+
     uint32_t                gpuJobCount = 0;
     FfxGpuJobDescription    gpuJobs[FSR2_MAX_GPU_JOBS] = {};
 
@@ -152,12 +152,12 @@ typedef struct BackendContext_VK {
     PipelineLayout          pipelineLayouts[FFX_FSR2_PASS_COUNT] = {};
     VkSampler               pointSampler = nullptr;
     VkSampler               linearSampler = nullptr;
-    
+
     VkDeviceMemory          uboMemory = nullptr;
     VkMemoryPropertyFlags   uboMemoryProperties = 0;
     UniformBuffer           uboRingBuffer[FSR2_UBO_RING_BUFFER_SIZE] = {};
     uint32_t                uboRingBufferIndex = 0;
- 
+
     VkImageMemoryBarrier    imageMemoryBarriers[FSR2_MAX_BARRIERS] = {};
     VkBufferMemoryBarrier   bufferMemoryBarriers[FSR2_MAX_BARRIERS] = {};
     uint32_t                scheduledImageBarrierCount = 0;
@@ -173,7 +173,7 @@ typedef struct BackendContext_VK {
 FFX_API size_t ffxFsr2GetScratchMemorySizeVK(VkPhysicalDevice physicalDevice)
 {
     uint32_t numExtensions = 0;
-    
+
     if (physicalDevice)
         vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &numExtensions, nullptr);
 
@@ -453,7 +453,7 @@ uint32_t findMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequiremen
         if ((memRequirements.memoryTypeBits & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & requestedProperties)) {
 
             // if just device-local memory is requested, make sure this is the invisible heap to prevent over-subscribing the local heap
-            if (requestedProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT))
+            if (requestedProperties == VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT && (memProperties.memoryTypes[i].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) && bestCandidate != UINT32_MAX)
                 continue;
 
             bestCandidate = i;
@@ -480,7 +480,7 @@ VkDescriptorBufferInfo accquireDynamicUBO(BackendContext_VK* backendContext, uin
     bufferInfo.buffer = ubo.bufferResource;
     bufferInfo.offset = 0;
     bufferInfo.range = size;
-    
+
     if (pData)
     {
         memcpy(ubo.pData, pData, size);
@@ -661,7 +661,7 @@ FfxErrorCode RegisterResourceVK(
         VkImageView imageView = reinterpret_cast<VkImageView>(inFfxResource->descriptorData);
 
         backendResource->imageResource = image;
- 
+
         if (image) {
 
             if (imageView) {
@@ -676,7 +676,7 @@ FfxErrorCode RegisterResourceVK(
             }
         }
     }
-    
+
     return FFX_OK;
 }
 
@@ -739,7 +739,7 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
         }
         if (strcmp(backendContext->extensionProperties[i].extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) == 0)
         {
-            // check for ray tracing support 
+            // check for ray tracing support
             VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {};
             accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
 
@@ -783,7 +783,7 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
     // load vulkan functions
     loadVKFunctions(backendContext, backendContext->vkFunctionTable.vkGetDeviceProcAddr);
 
-    // enumerate all the device extensions 
+    // enumerate all the device extensions
     backendContext->numDeviceExtensions = 0;
     vkEnumerateDeviceExtensionProperties(backendContext->physicalDevice, nullptr, &backendContext->numDeviceExtensions, nullptr);
     vkEnumerateDeviceExtensionProperties(backendContext->physicalDevice, nullptr, &backendContext->numDeviceExtensions, backendContext->extensionProperties);
@@ -909,7 +909,7 @@ FfxErrorCode CreateBackendContextVK(FfxFsr2Interface* backendInterface, FfxDevic
             }
         }
 
-        // map the memory block 
+        // map the memory block
         uint8_t* pData = nullptr;
 
         if (backendContext->vkFunctionTable.vkMapMemory(backendContext->device, backendContext->uboMemory, 0, FSR2_UBO_MEMORY_BLOCK_SIZE, 0, reinterpret_cast<void**>(&pData)) != VK_SUCCESS) {
@@ -990,7 +990,7 @@ FfxErrorCode DestroyBackendContextVK(FfxFsr2Interface* backendInterface)
 
 // create a internal resource that will stay alive until effect gets shut down
 FfxErrorCode CreateResourceVK(
-    FfxFsr2Interface* backendInterface, 
+    FfxFsr2Interface* backendInterface,
     const FfxCreateResourceDescription* createResourceDescription,
     FfxResourceInternal* outResource)
 {
@@ -1016,7 +1016,7 @@ FfxErrorCode CreateResourceVK(
     if (retval >= 64) res->resourceName[63] = '\0';
 #endif
     VkMemoryRequirements memRequirements = {};
-    
+
     switch (createResourceDescription->resourceDescription.type)
     {
     case FFX_RESOURCE_TYPE_BUFFER:
@@ -1029,7 +1029,7 @@ FfxErrorCode CreateResourceVK(
 
         if (createResourceDescription->initData)
             bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    
+
         if (backendContext->vkFunctionTable.vkCreateBuffer(backendContext->device, &bufferInfo, NULL, &res->bufferResource) != VK_SUCCESS) {
             return FFX_ERROR_BACKEND_API_ERROR;
         }
@@ -1077,10 +1077,10 @@ FfxErrorCode CreateResourceVK(
     }
 
     VkMemoryPropertyFlags requiredMemoryProperties;
-    
+
     if (createResourceDescription->heapType == FFX_HEAP_TYPE_UPLOAD)
         requiredMemoryProperties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-    else 
+    else
         requiredMemoryProperties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     VkMemoryAllocateInfo allocInfo{};
@@ -1211,7 +1211,7 @@ FfxErrorCode CreateResourceVK(
 
             backendInterface->fpScheduleGpuJob(backendInterface, &copyJob);
 
-            // add to the list of staging resources to delete later 
+            // add to the list of staging resources to delete later
             uint32_t stagingResIdx = backendContext->stagingResourceCount++;
 
             FFX_ASSERT(backendContext->stagingResourceCount < FSR2_MAX_STAGING_RESOURCE_COUNT);
@@ -1248,7 +1248,7 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
 
     BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
 
-    // query device capabilities 
+    // query device capabilities
     FfxDeviceCapabilities deviceCapabilities;
 
     GetDeviceCapabilitiesVK(backendInterface, &deviceCapabilities, ffxGetDeviceVK(backendContext->device));
@@ -1362,7 +1362,7 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
 
     // allocate descriptor sets
     pipelineLayout.descriptorSetIndex = 0;
-    
+
     for (uint32_t i = 0; i < FSR2_MAX_QUEUED_FRAMES; i++)
     {
         VkDescriptorSetAllocateInfo allocateInfo = {};
@@ -1386,7 +1386,7 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
         return FFX_ERROR_BACKEND_API_ERROR;
     }
 
-    // create the shader module 
+    // create the shader module
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {};
     shaderModuleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     shaderModuleCreateInfo.pCode = (uint32_t*)shaderBlob.data;
@@ -1623,7 +1623,7 @@ static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxG
         descriptorWriteIndex++;
     }
 
-    // insert all the barriers 
+    // insert all the barriers
     flushBarriers(backendContext, vkCommandBuffer);
 
     // update all uavs and srvs
@@ -1632,7 +1632,7 @@ static FfxErrorCode executeGpuJobCompute(BackendContext_VK* backendContext, FfxG
     // bind pipeline
     backendContext->vkFunctionTable.vkCmdBindPipeline(vkCommandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, reinterpret_cast<VkPipeline>(job->computeJobDescriptor.pipeline.pipeline));
 
-    // bind descriptor sets 
+    // bind descriptor sets
     VkDescriptorSet sets[] = {
         backendContext->samplerDescriptorSet,
         pipelineLayout->descriptorSets[pipelineLayout->descriptorSetIndex],
@@ -1888,7 +1888,7 @@ FfxErrorCode DestroyPipelineVK(FfxFsr2Interface* backendInterface, FfxPipelineSt
 
     BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
 
-    // destroy pipeline 
+    // destroy pipeline
     VkPipeline computePipeline = reinterpret_cast<VkPipeline>(pipeline->pipeline);
     if (computePipeline) {
         backendContext->vkFunctionTable.vkDestroyPipeline(backendContext->device, computePipeline, nullptr);
@@ -1897,7 +1897,7 @@ FfxErrorCode DestroyPipelineVK(FfxFsr2Interface* backendInterface, FfxPipelineSt
 
     BackendContext_VK::PipelineLayout* pipelineLayout = reinterpret_cast<BackendContext_VK::PipelineLayout*>(pipeline->rootSignature);
     if (pipelineLayout) {
-        // destroy descriptor sets 
+        // destroy descriptor sets
         for (uint32_t i = 0; i < FSR2_MAX_QUEUED_FRAMES; i++)
             pipelineLayout->descriptorSets[i] = nullptr;
 
