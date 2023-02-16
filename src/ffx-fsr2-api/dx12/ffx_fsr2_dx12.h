@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -97,7 +97,7 @@ FFX_API FfxResource ffxGetResourceDX12(
     FfxResourceStates state = FFX_RESOURCE_STATE_COMPUTE_READ,
     UINT shaderComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING);
 
-/// Retrieve a <c><i>ID3D12Resource</i></c> pointer associated with a UAV RESOURCE_IDENTIFIER.
+/// Retrieve a <c><i>ID3D12Resource</i></c> pointer associated with a RESOURCE_IDENTIFIER.
 /// Used for debug purposes when blitting internal surfaces.
 ///
 /// @param [in] context                     A pointer to a <c><i>FfxFsr2Context</i></c> structure.

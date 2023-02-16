@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -22,37 +22,37 @@
 #include "ffx_fsr2_shaders_dx12.h"
 #include "../../ffx_util.h"
 
+#include "ffx_fsr2_tcr_autogen_pass_permutations.h"
 #include "ffx_fsr2_autogen_reactive_pass_permutations.h"
 #include "ffx_fsr2_accumulate_pass_permutations.h"
 #include "ffx_fsr2_compute_luminance_pyramid_pass_permutations.h"
 #include "ffx_fsr2_depth_clip_pass_permutations.h"
 #include "ffx_fsr2_lock_pass_permutations.h"
-#include "ffx_fsr2_prepare_input_color_pass_permutations.h"
 #include "ffx_fsr2_reconstruct_previous_depth_pass_permutations.h"
 #include "ffx_fsr2_rcas_pass_permutations.h"
 
+#include "ffx_fsr2_tcr_autogen_pass_wave64_permutations.h"
 #include "ffx_fsr2_autogen_reactive_pass_wave64_permutations.h"
 #include "ffx_fsr2_accumulate_pass_wave64_permutations.h"
 #include "ffx_fsr2_compute_luminance_pyramid_pass_wave64_permutations.h"
 #include "ffx_fsr2_depth_clip_pass_wave64_permutations.h"
 #include "ffx_fsr2_lock_pass_wave64_permutations.h"
-#include "ffx_fsr2_prepare_input_color_pass_wave64_permutations.h"
 #include "ffx_fsr2_reconstruct_previous_depth_pass_wave64_permutations.h"
 #include "ffx_fsr2_rcas_pass_wave64_permutations.h"
 
+#include "ffx_fsr2_tcr_autogen_pass_16bit_permutations.h"
 #include "ffx_fsr2_autogen_reactive_pass_16bit_permutations.h"
 #include "ffx_fsr2_accumulate_pass_16bit_permutations.h"
 #include "ffx_fsr2_depth_clip_pass_16bit_permutations.h"
 #include "ffx_fsr2_lock_pass_16bit_permutations.h"
-#include "ffx_fsr2_prepare_input_color_pass_16bit_permutations.h"
 #include "ffx_fsr2_reconstruct_previous_depth_pass_16bit_permutations.h"
 #include "ffx_fsr2_rcas_pass_16bit_permutations.h"
 
+#include "ffx_fsr2_tcr_autogen_pass_wave64_16bit_permutations.h"
 #include "ffx_fsr2_autogen_reactive_pass_wave64_16bit_permutations.h"
 #include "ffx_fsr2_accumulate_pass_wave64_16bit_permutations.h"
 #include "ffx_fsr2_depth_clip_pass_wave64_16bit_permutations.h"
 #include "ffx_fsr2_lock_pass_wave64_16bit_permutations.h"
-#include "ffx_fsr2_prepare_input_color_pass_wave64_16bit_permutations.h"
 #include "ffx_fsr2_reconstruct_previous_depth_pass_wave64_16bit_permutations.h"
 #include "ffx_fsr2_rcas_pass_wave64_16bit_permutations.h"
 
@@ -72,37 +72,6 @@ key.FFX_FSR2_OPTION_APPLY_SHARPENING = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PE
 #undef POPULATE_SHADER_BLOB
 #endif // #if defined(POPULATE_SHADER_BLOB)
 #define POPULATE_SHADER_BLOB(info, index)  { info[index].blobData, info[index].blobSize, info[index].numUAVResources, info[index].numSRVResources, info[index].numCBVResources, info[index].uavResourceNames, info[index].uavResourceBindings, info[index].srvResourceNames, info[index].srvResourceBindings, info[index].cbvResourceNames, info[index].cbvResourceBindings }
-
-static Fsr2ShaderBlobDX12 fsr2GetPrepareInputColorPassPermutationBlobByIndex(uint32_t permutationOptions, bool isWave64, bool is16bit) {
-    
-    ffx_fsr2_prepare_input_color_pass_PermutationKey key;
-
-    POPULATE_PERMUTATION_KEY(permutationOptions, key);
-
-    if (isWave64) {
-
-        if (is16bit) {
-
-            const int32_t tableIndex = g_ffx_fsr2_prepare_input_color_pass_wave64_16bit_IndirectionTable[key.index];
-            return POPULATE_SHADER_BLOB(g_ffx_fsr2_prepare_input_color_pass_wave64_16bit_PermutationInfo, tableIndex);
-        } else {
-
-            const int32_t tableIndex = g_ffx_fsr2_prepare_input_color_pass_wave64_IndirectionTable[key.index];
-            return POPULATE_SHADER_BLOB(g_ffx_fsr2_prepare_input_color_pass_wave64_PermutationInfo, tableIndex);
-        }
-    } else {
-
-        if (is16bit) {
-
-            const int32_t tableIndex = g_ffx_fsr2_prepare_input_color_pass_16bit_IndirectionTable[key.index];
-            return POPULATE_SHADER_BLOB(g_ffx_fsr2_prepare_input_color_pass_16bit_PermutationInfo, tableIndex);
-        } else {
-
-            const int32_t tableIndex = g_ffx_fsr2_prepare_input_color_pass_IndirectionTable[key.index];
-            return POPULATE_SHADER_BLOB(g_ffx_fsr2_prepare_input_color_pass_PermutationInfo, tableIndex);
-        }
-    }
-}
 
 static Fsr2ShaderBlobDX12 fsr2GetDepthClipPassPermutationBlobByIndex(uint32_t permutationOptions, bool isWave64, bool is16bit) {
 
@@ -310,15 +279,47 @@ static Fsr2ShaderBlobDX12 fsr2GetAutogenReactivePassPermutationBlobByIndex(uint3
     }
 }
 
-Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions) {
+static Fsr2ShaderBlobDX12 fsr2GetTcrAutogeneratePassPermutationBlobByIndex(uint32_t permutationOptions, bool isWave64, bool is16bit) {
+
+    ffx_fsr2_autogen_reactive_pass_PermutationKey key;
+
+    POPULATE_PERMUTATION_KEY(permutationOptions, key);
+
+    if (isWave64) {
+
+        if (is16bit) {
+
+            const int32_t tableIndex = g_ffx_fsr2_tcr_autogen_pass_wave64_16bit_IndirectionTable[key.index];
+            return POPULATE_SHADER_BLOB(g_ffx_fsr2_tcr_autogen_pass_wave64_16bit_PermutationInfo, tableIndex);
+        }
+        else {
+
+            const int32_t tableIndex = g_ffx_fsr2_tcr_autogen_pass_wave64_IndirectionTable[key.index];
+            return POPULATE_SHADER_BLOB(g_ffx_fsr2_tcr_autogen_pass_wave64_PermutationInfo, tableIndex);
+        }
+    }
+    else {
+
+        if (is16bit) {
+
+            const int32_t tableIndex = g_ffx_fsr2_tcr_autogen_pass_16bit_IndirectionTable[key.index];
+            return POPULATE_SHADER_BLOB(g_ffx_fsr2_tcr_autogen_pass_16bit_PermutationInfo, tableIndex);
+        }
+        else {
+
+            const int32_t tableIndex = g_ffx_fsr2_tcr_autogen_pass_IndirectionTable[key.index];
+            return POPULATE_SHADER_BLOB(g_ffx_fsr2_tcr_autogen_pass_PermutationInfo, tableIndex);
+        }
+    }
+}
+
+Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndexDX12(FfxFsr2Pass passId, uint32_t permutationOptions) {
 
     bool isWave64 = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_FORCE_WAVE64);
     bool is16bit = FFX_CONTAINS_FLAG(permutationOptions, FSR2_SHADER_PERMUTATION_ALLOW_FP16);
 
     switch (passId) {
 
-        case FFX_FSR2_PASS_PREPARE_INPUT_COLOR:
-            return fsr2GetPrepareInputColorPassPermutationBlobByIndex(permutationOptions, isWave64, is16bit);
         case FFX_FSR2_PASS_DEPTH_CLIP:
             return fsr2GetDepthClipPassPermutationBlobByIndex(permutationOptions, isWave64, is16bit);
         case FFX_FSR2_PASS_RECONSTRUCT_PREVIOUS_DEPTH:
@@ -334,6 +335,8 @@ Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t pe
             return fsr2GetComputeLuminancePyramidPassPermutationBlobByIndex(permutationOptions, isWave64, is16bit);
         case FFX_FSR2_PASS_GENERATE_REACTIVE:
             return fsr2GetAutogenReactivePassPermutationBlobByIndex(permutationOptions, isWave64, is16bit);
+        case FFX_FSR2_PASS_TCR_AUTOGENERATE:
+            return fsr2GetTcrAutogeneratePassPermutationBlobByIndex(permutationOptions, isWave64, is16bit);
         default:
             FFX_ASSERT_FAIL("Should never reach here.");
             break;

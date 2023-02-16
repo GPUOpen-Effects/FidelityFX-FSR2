@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,36 +24,25 @@
 
 void ReconstructPrevDepth(FfxInt32x2 iPxPos, FfxFloat32 fDepth, FfxFloat32x2 fMotionVector, FfxInt32x2 iPxDepthSize)
 {
-    FfxFloat32x2 fDepthUv = (iPxPos + FfxFloat32(0.5)) / iPxDepthSize;
-    FfxFloat32x2 fPxPrevPos = (fDepthUv + fMotionVector) * iPxDepthSize - FfxFloat32x2(0.5, 0.5);
-    FfxInt32x2 iPxPrevPos = FfxInt32x2(floor(fPxPrevPos));
-    FfxFloat32x2 fPxFrac = ffxFract(fPxPrevPos);
+    fMotionVector *= FfxFloat32(length(fMotionVector * DisplaySize()) > 0.1f);
 
-    const FfxFloat32 bilinearWeights[2][2] = {
-        {
-            (1 - fPxFrac.x) * (1 - fPxFrac.y),
-            (fPxFrac.x) * (1 - fPxFrac.y)
-        },
-        {
-            (1 - fPxFrac.x) * (fPxFrac.y),
-            (fPxFrac.x) * (fPxFrac.y)
-        }
-    };
+    FfxFloat32x2 fUv = (iPxPos + FfxFloat32(0.5)) / iPxDepthSize;
+    FfxFloat32x2 fReprojectedUv = fUv + fMotionVector;
+ 
+    BilinearSamplingData bilinearInfo = GetBilinearSamplingData(fReprojectedUv, RenderSize());
 
     // Project current depth into previous frame locations.
     // Push to all pixels having some contribution if reprojection is using bilinear logic.
-    for (FfxInt32 y = 0; y <= 1; ++y) {
-        for (FfxInt32 x = 0; x <= 1; ++x) {
-            
-            FfxInt32x2 offset = FfxInt32x2(x, y);
-            FfxFloat32 w = bilinearWeights[y][x];
+    for (FfxInt32 iSampleIndex = 0; iSampleIndex < 4; iSampleIndex++) {
+        
+        const FfxInt32x2 iOffset = bilinearInfo.iOffsets[iSampleIndex];
+        FfxFloat32 fWeight = bilinearInfo.fWeights[iSampleIndex];
 
-            if (w > reconstructedDepthBilinearWeightThreshold) {
+        if (fWeight > fReconstructedDepthBilinearWeightThreshold) {
 
-                FfxInt32x2 storePos = iPxPrevPos + offset;
-                if (IsOnScreen(storePos, iPxDepthSize)) {
-                    StoreReconstructedDepth(storePos, fDepth);
-                }
+            FfxInt32x2 iStorePos = bilinearInfo.iBasePos + iOffset;
+            if (IsOnScreen(iStorePos, iPxDepthSize)) {
+                StoreReconstructedDepth(iStorePos, fDepth);
             }
         }
     }
@@ -106,65 +95,24 @@ void FindNearestDepth(FFX_PARAMETER_IN FfxInt32x2 iPxPos, FFX_PARAMETER_IN FfxIn
     }
 }
 
-FfxFloat32 ComputeMotionDivergence(FfxInt32x2 iPxPos, FfxInt32x2 iPxInputMotionVectorSize)
+FfxFloat32 ComputeLockInputLuma(FfxInt32x2 iPxLrPos)
 {
-    FfxFloat32 minconvergence = 1.0f;
+    //We assume linear data. if non-linear input (sRGB, ...),
+    //then we should convert to linear first and back to sRGB on output.
+    FfxFloat32x3 fRgb = ffxMax(FfxFloat32x3(0, 0, 0), LoadInputColor(iPxLrPos));
 
-    FfxFloat32x2 fMotionVectorNucleus = LoadInputMotionVector(iPxPos) * RenderSize();
-    FfxFloat32 fNucleusVelocity = length(fMotionVectorNucleus);
+    // Use internal auto exposure for locking logic
+    fRgb /= PreExposure();
+    fRgb *= Exposure();
 
-    const FfxFloat32 MotionVectorVelocityEpsilon = 1e-02f;
+#if FFX_FSR2_OPTION_HDR_COLOR_INPUT
+    fRgb = Tonemap(fRgb);
+#endif
 
-    if (fNucleusVelocity > MotionVectorVelocityEpsilon) {
-        for (FfxInt32 y = -1; y <= 1; ++y) {
-            for (FfxInt32 x = -1; x <= 1; ++x) {
+    //compute luma used to lock pixels, if used elsewhere the ffxPow must be moved!
+    const FfxFloat32 fLockInputLuma = ffxPow(RGBToPerceivedLuma(fRgb), FfxFloat32(1.0 / 6.0));
 
-                FfxInt32x2 sp = ClampLoad(iPxPos, FfxInt32x2(x, y), iPxInputMotionVectorSize);
-
-                FfxFloat32x2 fMotionVector = LoadInputMotionVector(sp) * RenderSize();
-                FfxFloat32 fVelocity = length(fMotionVector);
-
-                fVelocity = ffxMax(fVelocity, fNucleusVelocity);
-                minconvergence = ffxMin(minconvergence, dot(fMotionVector / fVelocity, fMotionVectorNucleus / fVelocity));
-            }
-        }
-    }
-
-    return ffxSaturate(1.0f - minconvergence);
-}
-
-
-void PreProcessReactiveMasks(FfxInt32x2 iPxLrPos, FfxFloat32 fMotionDivergence)
-{
-    // Compensate for bilinear sampling in accumulation pass
-
-    FfxFloat32x3 fReferenceColor = LoadPreparedInputColor(iPxLrPos);
-    FfxFloat32x2 fReactiveFactor = FfxFloat32x2(0.0f, fMotionDivergence);
-
-    for (int y = -1; y < 2; y++) {
-        for (int x = -1; x < 2; x++) {
-
-            const FfxInt32x2 sampleCoord = ClampLoad(iPxLrPos, FfxInt32x2(x, y), FfxInt32x2(RenderSize()));
-
-            FfxFloat32x3 fColorSample = LoadPreparedInputColor(sampleCoord);
-            FfxFloat32 fReactiveSample = LoadReactiveMask(sampleCoord);
-            FfxFloat32 fTransparencyAndCompositionSample = LoadTransparencyAndCompositionMask(sampleCoord);
-
-            const FfxFloat32 fColorSimilarity = dot(normalize(fReferenceColor), normalize(fColorSample));
-            const FfxFloat32 fVelocitySimilarity = 1.0f - abs(length(fReferenceColor) - length(fColorSample));
-            const FfxFloat32 fSimilarity = fColorSimilarity * fVelocitySimilarity;
-
-            // Increase power for non-similar samples
-            const FfxFloat32 fPowerBiasMax = 6.0f;
-            const FfxFloat32 fSimilarityPower = 1.0f + (fPowerBiasMax - fSimilarity * fPowerBiasMax);
-            const FfxFloat32 fWeightedReactiveSample = ffxPow(fReactiveSample, fSimilarityPower);
-            const FfxFloat32 fWeightedTransparencyAndCompositionSample = ffxPow(fTransparencyAndCompositionSample, fSimilarityPower);
-
-            fReactiveFactor = ffxMax(fReactiveFactor, FfxFloat32x2(fWeightedReactiveSample, fWeightedTransparencyAndCompositionSample));
-        }
-    }
-
-    StoreDilatedReactiveMasks(iPxLrPos, fReactiveFactor);
+    return fLockInputLuma;
 }
 
 void ReconstructAndDilate(FfxInt32x2 iPxLrPos)
@@ -189,13 +137,8 @@ void ReconstructAndDilate(FfxInt32x2 iPxLrPos)
 
     ReconstructPrevDepth(iPxLrPos, fDilatedDepth, fDilatedMotionVector, RenderSize());
 
-#if FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS
-    FfxFloat32 fMotionDivergence = ComputeMotionDivergence(iSamplePos, RenderSize());
-#else
-    FfxFloat32 fMotionDivergence = ComputeMotionDivergence(iSamplePos, DisplaySize());
-#endif
-
-    PreProcessReactiveMasks(iPxLrPos, fMotionDivergence);
+    FfxFloat32 fLockInputLuma = ComputeLockInputLuma(iPxLrPos);
+    StoreLockInputLuma(iPxLrPos, fLockInputLuma);
 }
 
 

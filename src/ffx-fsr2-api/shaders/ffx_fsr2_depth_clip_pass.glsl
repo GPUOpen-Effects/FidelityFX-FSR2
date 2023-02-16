@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,13 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// FSR2 pass 3
-// SRV  7 : FSR2_ReconstructedPrevNearestDepth  : r_reconstructed_previous_nearest_depth
-// SRV  8 : FSR2_DilatedVelocity                : r_dilated_motion_vectors
-// SRV  9 : FSR2_DilatedDepth                   : r_dilatedDepth
-// UAV 12 : FSR2_DepthClip                      : rw_depth_clip
-// CB   0 : cbFSR2
-
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
@@ -34,8 +27,20 @@
 #define FSR2_BIND_SRV_RECONSTRUCTED_PREV_NEAREST_DEPTH      0
 #define FSR2_BIND_SRV_DILATED_MOTION_VECTORS                1
 #define FSR2_BIND_SRV_DILATED_DEPTH                         2
-#define FSR2_BIND_UAV_DEPTH_CLIP                            3
-#define FSR2_BIND_CB_FSR2                                   4
+#define FSR2_BIND_SRV_REACTIVE_MASK                         3
+#define FSR2_BIND_SRV_TRANSPARENCY_AND_COMPOSITION_MASK     4
+#define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  5
+#define FSR2_BIND_SRV_PREVIOUS_DILATED_MOTION_VECTORS       6
+#define FSR2_BIND_SRV_INPUT_MOTION_VECTORS                  7
+#define FSR2_BIND_SRV_INPUT_COLOR                           8
+#define FSR2_BIND_SRV_INPUT_DEPTH                           9
+#define FSR2_BIND_SRV_INPUT_EXPOSURE                        10
+
+#define FSR2_BIND_UAV_DEPTH_CLIP                            11
+#define FSR2_BIND_UAV_DILATED_REACTIVE_MASKS                12
+#define FSR2_BIND_UAV_PREPARED_INPUT_COLOR                  13
+
+#define FSR2_BIND_CB_FSR2                                   14
 
 #include "ffx_fsr2_callbacks_glsl.h"
 #include "ffx_fsr2_common.h"

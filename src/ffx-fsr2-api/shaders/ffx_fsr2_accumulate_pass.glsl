@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,50 +19,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// FSR2 pass 5
-// SRV  4 : FSR2_Exposure                       : r_exposure
-// SRV  6 : m_UpscaleTransparencyAndComposition : r_transparency_and_composition_mask
-// SRV  8 : FSR2_DilatedVelocity                : r_dilated_motion_vectors
-// SRV 10 : FSR2_InternalUpscaled2              : r_internal_upscaled_color
-// SRV 11 : FSR2_LockStatus2                    : r_lock_status
-// SRV 12 : FSR2_DepthClip                      : r_depth_clip
-// SRV 13 : FSR2_PreparedInputColor             : r_prepared_input_color
-// SRV 14 : FSR2_LumaHistory                    : r_luma_history
-// SRV 16 : FSR2_LanczosLutData                 : r_lanczos_lut
-// SRV 26 : FSR2_MaximumUpsampleBias            : r_upsample_maximum_bias_lut
-// SRV 27 : FSR2_ReactiveMaskMax                : r_reactive_max
-// SRV 28 : FSR2_ExposureMips                   : r_imgMips
-// UAV 10 : FSR2_InternalUpscaled1              : rw_internal_upscaled_color
-// UAV 11 : FSR2_LockStatus1                    : rw_lock_status
-// UAV 18 : DisplayOutput                       : rw_upscaled_output
-// CB   0 : cbFSR2
-// CB   1 : FSR2DispatchOffsets
-
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_samplerless_texture_functions : require
+// Needed for rw_upscaled_output declaration
+#extension GL_EXT_shader_image_load_formatted : require
 
-#define FSR2_BIND_SRV_EXPOSURE                               0
+#define FSR2_BIND_SRV_INPUT_EXPOSURE                         0
 #define FSR2_BIND_SRV_DILATED_REACTIVE_MASKS                 1
 #if FFX_FSR2_OPTION_LOW_RESOLUTION_MOTION_VECTORS
 #define FSR2_BIND_SRV_DILATED_MOTION_VECTORS                 2
 #else
-#define FSR2_BIND_SRV_MOTION_VECTORS                         2
+#define FSR2_BIND_SRV_INPUT_MOTION_VECTORS                   2
 #endif
 #define FSR2_BIND_SRV_INTERNAL_UPSCALED                      3
 #define FSR2_BIND_SRV_LOCK_STATUS                            4
-#define FSR2_BIND_SRV_DEPTH_CLIP                             5
+#define FSR2_BIND_SRV_INPUT_DEPTH_CLIP                       5
 #define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                   6
-#define FSR2_BIND_SRV_LUMA_HISTORY                           7
+#define FSR2_BIND_SRV_LUMA_INSTABILITY                       7
 #define FSR2_BIND_SRV_LANCZOS_LUT                            8
 #define FSR2_BIND_SRV_UPSCALE_MAXIMUM_BIAS_LUT               9
-#define FSR2_BIND_SRV_EXPOSURE_MIPS                         10
-#define FSR2_BIND_UAV_INTERNAL_UPSCALED                     11
-#define FSR2_BIND_UAV_LOCK_STATUS                           12
-#define FSR2_BIND_UAV_UPSCALED_OUTPUT                       13
+#define FSR2_BIND_SRV_SCENE_LUMINANCE_MIPS                   10
+#define FSR2_BIND_SRV_AUTO_EXPOSURE                          11
+#define FSR2_BIND_SRV_LUMA_HISTORY                           12
 
-#define FSR2_BIND_CB_FSR2                                   14
+#define FSR2_BIND_UAV_INTERNAL_UPSCALED                      13
+#define FSR2_BIND_UAV_LOCK_STATUS                            14
+#define FSR2_BIND_UAV_UPSCALED_OUTPUT                        15
+#define FSR2_BIND_UAV_NEW_LOCKS                              16
+#define FSR2_BIND_UAV_LUMA_HISTORY                           17
+
+#define FSR2_BIND_CB_FSR2                                    18
 
 #include "ffx_fsr2_callbacks_glsl.h"
 #include "ffx_fsr2_common.h"

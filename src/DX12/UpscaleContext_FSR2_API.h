@@ -60,5 +60,6 @@ private:
     FfxFsr2ContextDescription    initializationParameters = {};
     FfxFsr2Context              context;
 
+    bool                        m_enableDebugCheck;
     float memoryUsageInMegabytes = 0;
 };

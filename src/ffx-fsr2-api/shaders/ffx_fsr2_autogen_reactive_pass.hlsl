@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,17 +19,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-#define FSR2_BIND_SRV_PRE_ALPHA_COLOR                       0
-#define FSR2_BIND_SRV_POST_ALPHA_COLOR                      1
-#define FSR2_BIND_UAV_REACTIVE                              0
+#define FSR2_BIND_SRV_INPUT_OPAQUE_ONLY                     0
+#define FSR2_BIND_SRV_INPUT_COLOR                           1
+#define FSR2_BIND_UAV_AUTOREACTIVE                          0
+
 #define FSR2_BIND_CB_FSR2                                   0
+#define FSR2_BIND_CB_REACTIVE                               1
 
 #include "ffx_fsr2_callbacks_hlsl.h"
 #include "ffx_fsr2_common.h"
-
-Texture2D<float4>                       r_input_color_pre_alpha             : FFX_FSR2_DECLARE_SRV(FSR2_BIND_SRV_PRE_ALPHA_COLOR);
-Texture2D<float4>                       r_input_color_post_alpha            : FFX_FSR2_DECLARE_SRV(FSR2_BIND_SRV_POST_ALPHA_COLOR);
-RWTexture2D<float>                      rw_output_reactive_mask             : FFX_FSR2_DECLARE_UAV(FSR2_BIND_UAV_REACTIVE);
 
 #ifndef FFX_FSR2_THREAD_GROUP_WIDTH
 #define FFX_FSR2_THREAD_GROUP_WIDTH 8
@@ -44,13 +42,15 @@ RWTexture2D<float>                      rw_output_reactive_mask             : FF
 #define FFX_FSR2_NUM_THREADS [numthreads(FFX_FSR2_THREAD_GROUP_WIDTH, FFX_FSR2_THREAD_GROUP_HEIGHT, FFX_FSR2_THREAD_GROUP_DEPTH)]
 #endif // #ifndef FFX_FSR2_NUM_THREADS
 
-cbuffer cbGenerateReactive : register(b0)
+#if defined(FSR2_BIND_CB_REACTIVE)
+cbuffer cbGenerateReactive : FFX_FSR2_DECLARE_CB(FSR2_BIND_CB_REACTIVE)
 {
     float   scale;
     float   threshold;
     float   binaryValue;
     uint    flags;
 };
+#endif
 
 FFX_FSR2_NUM_THREADS
 FFX_FSR2_EMBED_ROOTSIG_CONTENT
@@ -58,8 +58,8 @@ void CS(uint2 uGroupId : SV_GroupID, uint2 uGroupThreadId : SV_GroupThreadID)
 {
     uint2 uDispatchThreadId = uGroupId * uint2(FFX_FSR2_THREAD_GROUP_WIDTH, FFX_FSR2_THREAD_GROUP_HEIGHT) + uGroupThreadId;
 
-    float3 ColorPreAlpha    = r_input_color_pre_alpha[uDispatchThreadId].rgb;
-    float3 ColorPostAlpha   = r_input_color_post_alpha[uDispatchThreadId].rgb;
+    float3 ColorPreAlpha    = LoadOpaqueOnly( FFX_MIN16_I2(uDispatchThreadId) ).rgb;
+    float3 ColorPostAlpha   = LoadInputColor(uDispatchThreadId).rgb;
     
     if (flags & FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_TONEMAP)
     {
@@ -81,5 +81,5 @@ void CS(uint2 uGroupId : SV_GroupID, uint2 uGroupThreadId : SV_GroupThreadID)
 
     out_reactive_value = (flags & FFX_FSR2_AUTOREACTIVEFLAGS_APPLY_THRESHOLD) ? (out_reactive_value < threshold ? 0 : binaryValue) : out_reactive_value;
 
-    rw_output_reactive_mask[uDispatchThreadId] = out_reactive_value;
+    rw_output_autoreactive[uDispatchThreadId] = out_reactive_value;
 }

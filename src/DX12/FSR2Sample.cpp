@@ -774,7 +774,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
     LPSTR lpCmdLine,
     int nCmdShow)
 {
-    LPCSTR Name = "FidelityFX Super Resolution 2.1";
+    LPCSTR Name = "FidelityFX Super Resolution 2.2";
 
     // create new DX sample
     return RunFramework(hInstance, lpCmdLine, nCmdShow, new FSR2Sample(Name));

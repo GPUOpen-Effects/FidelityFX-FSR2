@@ -87,20 +87,20 @@ set(fsr2_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_common.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_lock.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_postprocess_lock_status.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_prepare_input_color.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_reconstruct_dilated_velocity_and_previous_depth.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_reproject.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_sample.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_upsample.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_rcas.h
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_autogen_reactive_pass.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_accumulate_pass.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_compute_luminance_pyramid_pass.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_depth_clip_pass.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_lock_pass.glsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_prepare_input_color_pass.glsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_reconstruct_previous_depth_pass.glsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_rcas_pass.glsl)
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_rcas_pass.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_tcr_autogen.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_tcr_autogen_pass.glsl
+    ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_fsr2_autogen_reactive_pass.glsl)
 
 set(particle_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/../GpuParticleShaders/ParticleStructs.h
@@ -129,9 +129,12 @@ source_group("fsr2_shaders" FILES ${fsr2_shaders_src})
 source_group("particle_shaders" FILES ${particle_shaders_src})
 source_group("sample_shaders" FILES ${sample_shaders_src})
 
-copyCommand("${spd_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
-copyCommand("${fsr1_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
-copyCommand("${fsr2_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
+copyTargetCommand("${spd_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX copied_vk_shaders_spd_src)
+add_dependencies(copied_vk_shaders_spd_src Cauldron_VK copied_vk_shaders_postproc_src)
+copyTargetCommand("${fsr1_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibDX copied_vk_shaders_fsr1_src)
+add_dependencies(copied_vk_shaders_fsr1_src copied_vk_shaders_spd_src)
+copyTargetCommand("${fsr2_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK copied_vk_shaders_fsr2_src)
+add_dependencies(copied_vk_shaders_fsr2_src copied_vk_shaders_fsr1_src)
 copyCommand("${particle_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
 copyCommand("${sample_shaders_src}" ${CMAKE_HOME_DIRECTORY}/bin/ShaderLibVK)
 
@@ -140,6 +143,7 @@ target_compile_definitions(FSR2_Sample_VK PRIVATE $<$<CONFIG:RelWithDebInfo>:FSR
 target_link_libraries(FSR2_Sample_VK LINK_PUBLIC FSR2_Sample_Common Cauldron_VK ImGUI d3dcompiler Vulkan::Vulkan ffx_fsr2_api_x64 ffx_fsr2_api_vk_x64) # ffx_fsr2_api_x64
 target_include_directories(FSR2_Sample_VK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api ${CMAKE_CURRENT_SOURCE_DIR}/../../libs)
 target_link_directories(FSR2_Sample_VK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../libs)
+add_dependencies(FSR2_Sample_VK copied_vk_shaders_fsr2_src)
 
 set_target_properties(FSR2_Sample_VK PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_HOME_DIRECTORY}/bin" DEBUG_POSTFIX "d")
 set_source_files_properties(${Shaders_src} PROPERTIES VS_TOOL_OVERRIDE "Text")

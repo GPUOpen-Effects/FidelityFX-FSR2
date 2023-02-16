@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,67 +28,29 @@ void WriteUpscaledOutput(FFX_MIN16_U2 iPxHrPos, FfxFloat32x3 fUpscaledColor)
     StoreUpscaledOutput(FFX_MIN16_I2(iPxHrPos), fUpscaledColor);
 }
 
-#if FFX_HALF
-    #define FSR_RCAS_H
-    FfxFloat16x4 FsrRcasLoadH(FfxInt16x2 p)
-    {
-        FfxFloat32x4 inputSample = LoadRCAS_Input(p); //TODO: fix type
+#define FSR_RCAS_F
+FfxFloat32x4 FsrRcasLoadF(FfxInt32x2 p)
+{
+    FfxFloat32x4 fColor = LoadRCAS_Input(p);
 
-        inputSample.rgb *= Exposure();
+    fColor.rgb = PrepareRgb(fColor.rgb, Exposure(), PreExposure());
 
-#if FFX_FSR2_OPTION_HDR_COLOR_INPUT
-        inputSample.rgb = Tonemap(inputSample.rgb);
-#endif // #if FFX_FSR2_OPTION_HDR_COLOR_INPUT
+    return fColor;
+}
 
-        return FfxFloat16x4(inputSample);
-    }
-    void FsrRcasInputH(inout FfxFloat16 r, inout FfxFloat16 g, inout FfxFloat16 b) {}
-#else
-    #define FSR_RCAS_F
-    FfxFloat32x4 FsrRcasLoadF(FfxInt32x2 p)
-    {
-        FfxFloat32x4 inputSample = LoadRCAS_Input(p);
-
-        inputSample.rgb *= Exposure();
-
-#if FFX_FSR2_OPTION_HDR_COLOR_INPUT
-        inputSample.rgb = Tonemap(inputSample.rgb);
-#endif
-
-        return inputSample;
-    }
-
-    void FsrRcasInputF(inout FfxFloat32 r, inout FfxFloat32 g, inout FfxFloat32 b) {}
-#endif // #if FFX_HALF
+void FsrRcasInputF(inout FfxFloat32 r, inout FfxFloat32 g, inout FfxFloat32 b) {}
 
 #include "ffx_fsr1.h"
 
 
 void CurrFilter(FFX_MIN16_U2 pos)
 {
-#if FFX_HALF
-    FfxFloat16x3 c;
-    FsrRcasH(c.r, c.g, c.b, pos, RCASConfig());
-
-#if FFX_FSR2_OPTION_HDR_COLOR_INPUT
-    c = InverseTonemap(c);
-#endif
-
-    c /= FfxFloat16(Exposure());
-
-    WriteUpscaledOutput(pos, c); //TODO: fix type
-#else
     FfxFloat32x3 c;
     FsrRcasF(c.r, c.g, c.b, pos, RCASConfig());
 
-#if FFX_FSR2_OPTION_HDR_COLOR_INPUT
-    c = InverseTonemap(c);
-#endif
-
-    c /= Exposure();
+    c = UnprepareRgb(c, Exposure());
 
     WriteUpscaledOutput(pos, c);
-#endif
 }
 
 void RCAS(FfxUInt32x3 LocalThreadId, FfxUInt32x3 WorkGroupId, FfxUInt32x3 Dtid)

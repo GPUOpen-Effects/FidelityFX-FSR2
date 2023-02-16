@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,10 +32,10 @@ extern "C" {
 typedef struct Fsr2ShaderBlobDX12 {
 
     const uint8_t*  data;               // A pointer to the blob 
-    const uint32_t  size;               // Size in bytes.
-    const uint32_t  uavCount;           // Number of UAV.
-    const uint32_t  srvCount;           // Number of SRV.
-    const uint32_t  cbvCount;           // Number of CBs.
+    uint32_t        size;               // Size in bytes.
+    uint32_t        uavCount;           // Number of UAV.
+    uint32_t        srvCount;           // Number of SRV.
+    uint32_t        cbvCount;           // Number of CBs.
     const char**    boundUAVResourceNames;
     const uint32_t* boundUAVResources;  // Pointer to an array of bound UAV resources.
     const char**    boundSRVResourceNames;
@@ -58,7 +58,7 @@ typedef enum Fs2ShaderPermutationOptionsDX12 {
 } Fs2ShaderPermutationOptionsDX12;
 
 // Get a DX12 shader blob for the specified pass and permutation index.
-Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions);
+Fsr2ShaderBlobDX12 fsr2GetPermutationBlobByIndexDX12(FfxFsr2Pass passId, uint32_t permutationOptions);
 
 #if defined(__cplusplus)
 }

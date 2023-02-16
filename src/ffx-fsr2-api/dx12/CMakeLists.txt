@@ -1,7 +1,7 @@
 # This file is part of the FidelityFX SDK.
-# 
-# Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
-# 
+#
+# Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -31,12 +31,12 @@ file(GLOB SHADERS
     "${CMAKE_CURRENT_SOURCE_DIR}/../shaders/*.hlsl")
 
 set(PASS_SHADERS
+    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_tcr_autogen_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_autogen_reactive_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_accumulate_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_compute_luminance_pyramid_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_depth_clip_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_lock_pass.hlsl
-    ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_prepare_input_color_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_reconstruct_previous_depth_pass.hlsl
     ${CMAKE_CURRENT_SOURCE_DIR}/../shaders/ffx_fsr2_rcas_pass.hlsl)    
 

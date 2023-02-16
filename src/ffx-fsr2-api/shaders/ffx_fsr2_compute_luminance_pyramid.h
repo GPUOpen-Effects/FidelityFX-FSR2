@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,12 +29,14 @@ FFX_GROUPSHARED FfxFloat32 spdIntermediateA[16][16];
 
 FfxFloat32x4 SpdLoadSourceImage(FfxFloat32x2 tex, FfxUInt32 slice)
 {
-    FfxFloat32x3 fRgb = LoadInputColor(FfxInt32x2(tex));
+    FfxFloat32x2 fUv = (tex + 0.5f + Jitter()) / RenderSize();
+    fUv = ClampUv(fUv, RenderSize(), InputColorResourceDimensions());
+    FfxFloat32x3 fRgb = SampleInputColor(fUv);
 
-    FFX_STATIC const FfxFloat32x3 rgb2y = FfxFloat32x3(0.2126, 0.7152, 0.0722);
+    fRgb /= PreExposure();
    
     //compute log luma
-    const FfxFloat32 fLogLuma = log(ffxMax(FSR2_EPSILON, dot(rgb2y, fRgb)));
+    const FfxFloat32 fLogLuma = log(ffxMax(FSR2_EPSILON, RGBToLuma(fRgb)));
 
     // Make sure out of screen pixels contribute no value to the end result
     const FfxFloat32 result = all(FFX_LESS_THAN(tex, RenderSize())) ? fLogLuma : 0.0f;
@@ -59,8 +61,7 @@ void SpdStore(FfxInt32x2 pix, FfxFloat32x4 outValue, FfxUInt32 index, FfxUInt32 
         if (all(FFX_EQUAL(pix, FfxInt32x2(0, 0))))
         {
             FfxFloat32 prev = SPD_LoadExposureBuffer().y;
-            FfxUInt32x2 renderSize = SPD_RenderSize();
-            FfxFloat32 result = outValue.r / (renderSize.x * renderSize.y);
+            FfxFloat32 result = outValue.r;
 
             if (prev < resetAutoExposureAverageSmoothing) // Compare Lavg, so small or negative values
             {
@@ -105,7 +106,7 @@ void SpdStoreIntermediate(FfxUInt32 x, FfxUInt32 y, FfxFloat32x4 value)
 }
 FfxFloat32x4 SpdReduce4(FfxFloat32x4 v0, FfxFloat32x4 v1, FfxFloat32x4 v2, FfxFloat32x4 v3)
 {
-    return (v0 + v1 + v2 + v3);
+    return (v0 + v1 + v2 + v3) * 0.25f;
 }
 #endif
 

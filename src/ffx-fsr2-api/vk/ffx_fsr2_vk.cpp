@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -312,6 +312,8 @@ VkFormat getVKFormatFromSurfaceFormat(FfxSurfaceFormat fmt)
         return VK_FORMAT_R8G8_UNORM;
     case(FFX_SURFACE_FORMAT_R32_FLOAT):
         return VK_FORMAT_R32_SFLOAT;
+    case(FFX_SURFACE_FORMAT_R8_UINT):
+        return VK_FORMAT_R8_UINT;
     default:
         return VK_FORMAT_UNDEFINED;
     }
@@ -435,6 +437,8 @@ FfxSurfaceFormat ffxGetSurfaceFormatVK(VkFormat fmt)
         return FFX_SURFACE_FORMAT_R8_UNORM;
     case(VK_FORMAT_R32_SFLOAT):
         return FFX_SURFACE_FORMAT_R32_FLOAT;
+    case(VK_FORMAT_R8_UINT):
+        return FFX_SURFACE_FORMAT_R8_UINT;
     default:
         return FFX_SURFACE_FORMAT_UNKNOWN;
     }
@@ -508,6 +512,20 @@ VkDescriptorBufferInfo accquireDynamicUBO(BackendContext_VK* backendContext, uin
     return bufferInfo;
 }
 
+static uint32_t getDefaultSubgroupSize(const BackendContext_VK* backendContext)
+{
+    VkPhysicalDeviceVulkan11Properties vulkan11Properties = {};
+    vulkan11Properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES;
+
+    VkPhysicalDeviceProperties2 deviceProperties2 = {};
+    deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    deviceProperties2.pNext = &vulkan11Properties;
+    vkGetPhysicalDeviceProperties2(backendContext->physicalDevice, &deviceProperties2);
+    FFX_ASSERT(vulkan11Properties.subgroupSize == 32 || vulkan11Properties.subgroupSize == 64); // current desktop market
+
+    return vulkan11Properties.subgroupSize;
+}
+
 // Create a FfxFsr2Device from a VkDevice
 FfxDevice ffxGetDeviceVK(VkDevice vkDevice)
 {
@@ -521,7 +539,7 @@ FfxCommandList ffxGetCommandListVK(VkCommandBuffer cmdBuf)
     return reinterpret_cast<FfxCommandList>(cmdBuf);
 }
 
-FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, VkImage imgVk, VkImageView imageView, uint32_t width, uint32_t height, VkFormat imgFormat, wchar_t* name, FfxResourceStates state)
+FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, VkImage imgVk, VkImageView imageView, uint32_t width, uint32_t height, VkFormat imgFormat, const wchar_t* name, FfxResourceStates state)
 {
     FfxResource resource = {};
     resource.resource = reinterpret_cast<void*>(imgVk);
@@ -562,7 +580,7 @@ FfxResource ffxGetTextureResourceVK(FfxFsr2Context* context, VkImage imgVk, VkIm
     return resource;
 }
 
-FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, VkBuffer bufVk, uint32_t size, wchar_t* name, FfxResourceStates state)
+FfxResource ffxGetBufferResourceVK(FfxFsr2Context* context, VkBuffer bufVk, uint32_t size, const wchar_t* name, FfxResourceStates state)
 {
     FfxResource resource = {};
     resource.resource = reinterpret_cast<void*>(bufVk);
@@ -696,14 +714,14 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
 {
     BackendContext_VK* backendContext = (BackendContext_VK*)backendInterface->scratchBuffer;
 
+    const uint32_t defaultSubgroupSize = getDefaultSubgroupSize(backendContext);
+
     // no shader model in vulkan so assume the minimum
     deviceCapabilities->minimumSupportedShaderModel = FFX_SHADER_MODEL_5_1;
-    deviceCapabilities->waveLaneCountMin = 32;
-    deviceCapabilities->waveLaneCountMax = 32;
+    deviceCapabilities->waveLaneCountMin = defaultSubgroupSize;
+    deviceCapabilities->waveLaneCountMax = defaultSubgroupSize;
     deviceCapabilities->fp16Supported = false;
     deviceCapabilities->raytracingSupported = false;
-
-    BackendContext_VK* context = (BackendContext_VK*)backendInterface->scratchBuffer;
 
     // check if extensions are enabled
 
@@ -718,10 +736,16 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
             VkPhysicalDeviceProperties2 deviceProperties2 = {};
             deviceProperties2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
             deviceProperties2.pNext = &subgroupSizeControlProperties;
-            vkGetPhysicalDeviceProperties2(context->physicalDevice, &deviceProperties2);
+            vkGetPhysicalDeviceProperties2(backendContext->physicalDevice, &deviceProperties2);
 
-            deviceCapabilities->waveLaneCountMin = subgroupSizeControlProperties.minSubgroupSize;
-            deviceCapabilities->waveLaneCountMax = subgroupSizeControlProperties.maxSubgroupSize;
+            // NOTE: It's important to check requiredSubgroupSizeStages flags (and it's required by the spec).
+            // As of August 2022, AMD's Vulkan drivers do not support subgroup size selection through Vulkan API
+            // and this information is reported through requiredSubgroupSizeStages flags.
+            if (subgroupSizeControlProperties.requiredSubgroupSizeStages & VK_SHADER_STAGE_COMPUTE_BIT)
+            {
+                deviceCapabilities->waveLaneCountMin = subgroupSizeControlProperties.minSubgroupSize;
+                deviceCapabilities->waveLaneCountMax = subgroupSizeControlProperties.maxSubgroupSize;
+            }
         }
         if (strcmp(backendContext->extensionProperties[i].extensionName, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME) == 0)
         {
@@ -733,7 +757,7 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
             physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             physicalDeviceFeatures2.pNext = &shaderFloat18Int8Features;
 
-            vkGetPhysicalDeviceFeatures2(context->physicalDevice, &physicalDeviceFeatures2);
+            vkGetPhysicalDeviceFeatures2(backendContext->physicalDevice, &physicalDeviceFeatures2);
 
             deviceCapabilities->fp16Supported = (bool)shaderFloat18Int8Features.shaderFloat16;
         }
@@ -747,7 +771,7 @@ FfxErrorCode GetDeviceCapabilitiesVK(FfxFsr2Interface* backendInterface, FfxDevi
             physicalDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
             physicalDeviceFeatures2.pNext = &accelerationStructureFeatures;
 
-            vkGetPhysicalDeviceFeatures2(context->physicalDevice, &physicalDeviceFeatures2);
+            vkGetPhysicalDeviceFeatures2(backendContext->physicalDevice, &physicalDeviceFeatures2);
 
             deviceCapabilities->raytracingSupported = (bool)accelerationStructureFeatures.accelerationStructure;
         }
@@ -1252,15 +1276,20 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     FfxDeviceCapabilities deviceCapabilities;
 
     GetDeviceCapabilitiesVK(backendInterface, &deviceCapabilities, ffxGetDeviceVK(backendContext->device));
+    const uint32_t defaultSubgroupSize = getDefaultSubgroupSize(backendContext);
 
     // check if we can force wave64
     bool canForceWave64 = false;
     bool useLut = false;
 
-    if (deviceCapabilities.waveLaneCountMin == 32 && deviceCapabilities.waveLaneCountMax == 64) {
-
+    if (defaultSubgroupSize == 32 && deviceCapabilities.waveLaneCountMax == 64)
+    {
         useLut = true;
         canForceWave64 = true;
+    }
+    else if (defaultSubgroupSize == 64)
+    {
+        useLut = true;
     }
 
     // check if we have 16bit floating point.
@@ -1287,7 +1316,7 @@ FfxErrorCode CreatePipelineVK(FfxFsr2Interface* backendInterface, FfxFsr2Pass pa
     flags |= (canForceWave64) ? FSR2_SHADER_PERMUTATION_FORCE_WAVE64 : 0;
     flags |= (supportedFP16 && (pass != FFX_FSR2_PASS_RCAS)) ? FSR2_SHADER_PERMUTATION_ALLOW_FP16 : 0;
 
-    const Fsr2ShaderBlobVK shaderBlob = fsr2GetPermutationBlobByIndex(pass, flags);
+    const Fsr2ShaderBlobVK shaderBlob = fsr2GetPermutationBlobByIndexVK(pass, flags);
     FFX_ASSERT(shaderBlob.data && shaderBlob.size);
 
     // populate the pass.

@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,7 +28,7 @@
 #define FSR2_BIND_UAV_SPD_GLOBAL_ATOMIC               1
 #define FSR2_BIND_UAV_EXPOSURE_MIP_LUMA_CHANGE        2
 #define FSR2_BIND_UAV_EXPOSURE_MIP_5                  3
-#define FSR2_BIND_UAV_EXPOSURE                        4
+#define FSR2_BIND_UAV_AUTO_EXPOSURE                   4
 #define FSR2_BIND_CB_FSR2                             5
 #define FSR2_BIND_CB_SPD                              6
 
@@ -63,68 +63,35 @@
 	{
 		return cbSPD.renderSize;
 	}
-#else
-	uint MipCount()
-	{
-		return 0;
-	}
-
-	uint NumWorkGroups()
-	{
-		return 0;
-	}
-
-	uvec2 WorkGroupOffset()
-	{
-		return uvec2(0);
-	}
-
-	uvec2 SPD_RenderSize()
-	{
-		return uvec2(0);
-	}
 #endif
 
 vec2 SPD_LoadExposureBuffer()
 {
-#if defined(FSR2_BIND_UAV_EXPOSURE)
-	return imageLoad(rw_exposure, ivec2(0,0)).xy;
-#else
-	return vec2(0);
-#endif
+	return imageLoad(rw_auto_exposure, ivec2(0,0)).xy;
 }
 
 void SPD_SetExposureBuffer(vec2 value)
 {
-#if defined(FSR2_BIND_UAV_EXPOSURE)
-	imageStore(rw_exposure, ivec2(0,0), vec4(value, 0.0f, 0.0f));
-#endif
+	imageStore(rw_auto_exposure, ivec2(0,0), vec4(value, 0.0f, 0.0f));
 }
 
 vec4 SPD_LoadMipmap5(ivec2 iPxPos)
 {
-#if defined(FSR2_BIND_UAV_EXPOSURE_MIP_5)
 	return vec4(imageLoad(rw_img_mip_5, iPxPos).x, 0.0f, 0.0f, 0.0f);
-#else 
-    return vec4(0);
-#endif
 }
 
 void SPD_SetMipmap(ivec2 iPxPos, uint slice, float value)
 {
 	switch (slice)
 	{
-#if defined(FSR2_BIND_UAV_EXPOSURE_MIP_LUMA_CHANGE)
 	case FFX_FSR2_SHADING_CHANGE_MIP_LEVEL:
 		imageStore(rw_img_mip_shading_change, iPxPos, vec4(value, 0.0f, 0.0f, 0.0f));
 		break;
-#endif
-#if defined(FSR2_BIND_UAV_EXPOSURE_MIP_5)
 	case 5:
 		imageStore(rw_img_mip_5, iPxPos, vec4(value, 0.0f, 0.0f, 0.0f));
 		break;
-#endif
 	default:
+
         // avoid flattened side effect
 #if defined(FSR2_BIND_UAV_EXPOSURE_MIP_LUMA_CHANGE)
 		imageStore(rw_img_mip_shading_change, iPxPos, vec4(imageLoad(rw_img_mip_shading_change, iPxPos).x, 0.0f, 0.0f, 0.0f));
@@ -137,16 +104,12 @@ void SPD_SetMipmap(ivec2 iPxPos, uint slice, float value)
 
 void SPD_IncreaseAtomicCounter(inout uint spdCounter)
 {
-#if defined(FSR2_BIND_UAV_SPD_GLOBAL_ATOMIC)
 	spdCounter = imageAtomicAdd(rw_spd_global_atomic, ivec2(0,0), 1);
-#endif
 }
 
 void SPD_ResetAtomicCounter()
 {
-#if defined(FSR2_BIND_UAV_SPD_GLOBAL_ATOMIC)
 	imageStore(rw_spd_global_atomic, ivec2(0,0), uvec4(0));
-#endif
 }
 
 #include "ffx_fsr2_compute_luminance_pyramid.h"

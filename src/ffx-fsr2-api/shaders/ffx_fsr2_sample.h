@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -137,16 +137,19 @@ FfxFloat32 Lanczos2(FfxFloat32 x)
 }
 
 #if FFX_HALF
+
+#if 0
 FFX_MIN16_F Lanczos2NoClamp(FFX_MIN16_F x)
 {
     const FFX_MIN16_F PI = FFX_MIN16_F(3.141592653589793f); // TODO: share SDK constants
     return abs(x) < FFX_MIN16_F(FSR2_EPSILON) ? FFX_MIN16_F(1.f) : (sin(PI * x) / (PI * x)) * (sin(FFX_MIN16_F(0.5f) * PI * x) / (FFX_MIN16_F(0.5f) * PI * x));
 }
+#endif
 
 FFX_MIN16_F Lanczos2(FFX_MIN16_F x)
 {
     x = ffxMin(abs(x), FFX_MIN16_F(2.0f));
-    return Lanczos2NoClamp(x);
+    return FFX_MIN16_F(Lanczos2NoClamp(x));
 }
 #endif //FFX_HALF
 
@@ -566,12 +569,12 @@ FFX_MIN16_I2 ClampCoord(FFX_MIN16_I2 iPxSample, FFX_MIN16_I2 iPxOffset, FFX_MIN1
 #define DeclareCustomTextureSample(Name, InterpolateSamples, FetchSamples)                                           \
     FfxFloat32x4 Name(FfxFloat32x2 fUvSample, FfxInt32x2 iTextureSize)                                               \
     {                                                                                                                \
-        FfxFloat32x2 fPxSample = fUvSample * FfxFloat32x2(iTextureSize) - FfxFloat32x2(0.5f, 0.5f);                  \
-        FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));                                                         \
+        FfxFloat32x2 fPxSample = (fUvSample * FfxFloat32x2(iTextureSize)) - FfxFloat32x2(0.5f, 0.5f);                \
         /* Clamp base coords */                                                                                      \
-        iPxSample.x = ffxMax(0, ffxMin(iPxSample.x, iTextureSize.x - 1));                                            \
-        iPxSample.y = ffxMax(0, ffxMin(iPxSample.y, iTextureSize.y - 1));                                            \
+        fPxSample.x = ffxMax(0.0f, ffxMin(FfxFloat32(iTextureSize.x), fPxSample.x));                                 \
+        fPxSample.y = ffxMax(0.0f, ffxMin(FfxFloat32(iTextureSize.y), fPxSample.y));                                 \
         /* */                                                                                                        \
+        FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));                                                         \
         FfxFloat32x2 fPxFrac = ffxFract(fPxSample);                                                                  \
         FfxFloat32x4 fColorXY = FfxFloat32x4(InterpolateSamples(FetchSamples(iPxSample, iTextureSize), fPxFrac));    \
         return fColorXY;                                                                                             \
@@ -580,12 +583,12 @@ FFX_MIN16_I2 ClampCoord(FFX_MIN16_I2 iPxSample, FFX_MIN16_I2 iPxOffset, FFX_MIN1
 #define DeclareCustomTextureSampleMin16(Name, InterpolateSamples, FetchSamples)                                      \
     FFX_MIN16_F4 Name(FfxFloat32x2 fUvSample, FfxInt32x2 iTextureSize)                                               \
     {                                                                                                                \
-        FfxFloat32x2 fPxSample = fUvSample * FfxFloat32x2(iTextureSize) - FfxFloat32x2(0.5f, 0.5f);                  \
-        FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));                                                         \
+        FfxFloat32x2 fPxSample = (fUvSample * FfxFloat32x2(iTextureSize)) - FfxFloat32x2(0.5f, 0.5f);                \
         /* Clamp base coords */                                                                                      \
-        iPxSample.x = ffxMax(0, ffxMin(iPxSample.x, iTextureSize.x - 1));                                            \
-        iPxSample.y = ffxMax(0, ffxMin(iPxSample.y, iTextureSize.y - 1));                                            \
+        fPxSample.x = ffxMax(0.0f, ffxMin(FfxFloat32(iTextureSize.x), fPxSample.x));                                 \
+        fPxSample.y = ffxMax(0.0f, ffxMin(FfxFloat32(iTextureSize.y), fPxSample.y));                                 \
         /* */                                                                                                        \
+        FfxInt32x2 iPxSample = FfxInt32x2(floor(fPxSample));                                                         \
         FFX_MIN16_F2 fPxFrac = FFX_MIN16_F2(ffxFract(fPxSample));                                                    \
         FFX_MIN16_F4 fColorXY = FFX_MIN16_F4(InterpolateSamples(FetchSamples(iPxSample, iTextureSize), fPxFrac));    \
         return fColorXY;                                                                                             \
