@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,27 +25,25 @@
 typedef struct Fsr2Constants {
 
     int32_t                     renderSize[2];
+    int32_t                     maxRenderSize[2];
     int32_t                     displaySize[2];
-    uint32_t                    lumaMipDimensions[2];
-    uint32_t                    lumaMipLevelToUse;
-    uint32_t                    frameIndex;
-    float                       displaySizeRcp[2];
-    float                       jitterOffset[2];
+    int32_t                     inputColorResourceDimensions[2];
+    int32_t                     lumaMipDimensions[2];
+    int32_t                     lumaMipLevelToUse;
+    int32_t                     frameIndex;
+    
     float                       deviceToViewDepth[4];
-    float                       depthClipUVScale[2];
-    float                       postLockStatusUVScale[2];
-    float                       reactiveMaskDimRcp[2];
+    float                       jitterOffset[2];
     float                       motionVectorScale[2];
     float                       downscaleFactor[2];
-    float                       preExposure;
-    float                       tanHalfFOV;
     float                       motionVectorJitterCancellation[2];
+    float                       preExposure;
+    float                       previousFramePreExposure;
+    float                       tanHalfFOV;
     float                       jitterPhaseCount;
-    float                       lockInitialLifetime;
-    float                       lockTickDelta;
     float                       deltaTime;
     float                       dynamicResChangeFactor;
-    float                       lumaMipRcp;
+    float                       viewSpaceToMetersFactor;
 } Fsr2Constants;
 
 struct FfxFsr2ContextDescription;
@@ -61,7 +59,6 @@ typedef struct FfxFsr2Context_Private {
     Fsr2Constants               constants;
     FfxDevice                   device;
     FfxDeviceCapabilities       deviceCapabilities;
-    FfxPipelineState            pipelinePrepareInputColor;
     FfxPipelineState            pipelineDepthClip;
     FfxPipelineState            pipelineReconstructPreviousDepth;
     FfxPipelineState            pipelineLock;
@@ -70,6 +67,7 @@ typedef struct FfxFsr2Context_Private {
     FfxPipelineState            pipelineRCAS;
     FfxPipelineState            pipelineComputeLuminancePyramid;
     FfxPipelineState            pipelineGenerateReactive;
+    FfxPipelineState            pipelineTcrAutogenerate;
 
     // 2 arrays of resources, as e.g. FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS will use different resources when bound as SRV vs when bound as UAV
     FfxResourceInternal         srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_COUNT];

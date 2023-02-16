@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,12 @@
 
 #include "ffx_fsr2_shaders_vk.h"
 
+#include "ffx_fsr2_tcr_autogen_pass_permutations.h"
 #include "ffx_fsr2_autogen_reactive_pass_permutations.h"
 #include "ffx_fsr2_accumulate_pass_permutations.h"
 #include "ffx_fsr2_compute_luminance_pyramid_pass_permutations.h"
 #include "ffx_fsr2_depth_clip_pass_permutations.h"
 #include "ffx_fsr2_lock_pass_permutations.h"
-#include "ffx_fsr2_prepare_input_color_pass_permutations.h"
 #include "ffx_fsr2_reconstruct_previous_depth_pass_permutations.h"
 #include "ffx_fsr2_rcas_pass_permutations.h"
 
@@ -47,16 +47,6 @@ key.FFX_HALF = FFX_CONTAINS_FLAG(options, FSR2_SHADER_PERMUTATION_ALLOW_FP16);
 #undef POPULATE_SHADER_BLOB
 #endif // #if defined(POPULATE_SHADER_BLOB)
 #define POPULATE_SHADER_BLOB(info, index)  { info[index].blobData, info[index].blobSize, info[index].numStorageImageResources, info[index].numSampledImageResources, info[index].numUniformBufferResources, info[index].storageImageResourceNames, info[index].storageImageResourceBindings, info[index].sampledImageResourceNames, info[index].sampledImageResourceBindings, info[index].uniformBufferResourceNames, info[index].uniformBufferResourceBindings  }
-
-Fsr2ShaderBlobVK fsr2GetPrepareInputColorPassPermutationBlobByIndex(uint32_t permutationOptions) {
-
-    ffx_fsr2_prepare_input_color_pass_PermutationKey key;
-
-    POPULATE_PERMUTATION_KEY(permutationOptions, key);
-
-    const int32_t tableIndex = g_ffx_fsr2_prepare_input_color_pass_IndirectionTable[key.index];
-    return POPULATE_SHADER_BLOB(g_ffx_fsr2_prepare_input_color_pass_PermutationInfo, tableIndex);
-}
 
 Fsr2ShaderBlobVK fsr2GetDepthClipPassPermutationBlobByIndex(uint32_t permutationOptions) {
 
@@ -134,12 +124,20 @@ Fsr2ShaderBlobVK fsr2GetAutogenReactivePassPermutationBlobByIndex(uint32_t permu
     return POPULATE_SHADER_BLOB(g_ffx_fsr2_autogen_reactive_pass_PermutationInfo, tableIndex);
 }
 
-Fsr2ShaderBlobVK fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t permutationOptions)
+Fsr2ShaderBlobVK fsr2GetTcrAutogeneratePassPermutationBlobByIndex(uint32_t permutationOptions) {
+
+    ffx_fsr2_tcr_autogen_pass_PermutationKey key;
+
+    POPULATE_PERMUTATION_KEY(permutationOptions, key);
+
+    const int32_t tableIndex = g_ffx_fsr2_tcr_autogen_pass_IndirectionTable[key.index];
+    return POPULATE_SHADER_BLOB(g_ffx_fsr2_tcr_autogen_pass_PermutationInfo, tableIndex);
+}
+
+Fsr2ShaderBlobVK fsr2GetPermutationBlobByIndexVK(FfxFsr2Pass passId, uint32_t permutationOptions)
 {
     switch (passId) {
 
-    case FFX_FSR2_PASS_PREPARE_INPUT_COLOR:
-        return fsr2GetPrepareInputColorPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_DEPTH_CLIP:
         return fsr2GetDepthClipPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_RECONSTRUCT_PREVIOUS_DEPTH:
@@ -155,6 +153,8 @@ Fsr2ShaderBlobVK fsr2GetPermutationBlobByIndex(FfxFsr2Pass passId, uint32_t perm
         return fsr2GetComputeLuminancePyramidPassPermutationBlobByIndex(permutationOptions);
     case FFX_FSR2_PASS_GENERATE_REACTIVE:
         return fsr2GetAutogenReactivePassPermutationBlobByIndex(permutationOptions);
+    case FFX_FSR2_PASS_TCR_AUTOGENERATE:
+        return fsr2GetTcrAutogeneratePassPermutationBlobByIndex(permutationOptions);
     default:
         FFX_ASSERT_FAIL("Should never reach here.");
         break;

@@ -67,7 +67,7 @@ static uint64_t getMemoryUsageSnapshot(ID3D12Device* device)
 }
 
 UpscaleContext_FSR2_API::UpscaleContext_FSR2_API(UpscaleType type, std::string name)
-    : UpscaleContext(name)
+    : m_enableDebugCheck(false), UpscaleContext(name)
 {
 }
 
@@ -79,6 +79,19 @@ void UpscaleContext_FSR2_API::OnCreate(const FfxUpscaleInitParams& initParams)
 void UpscaleContext_FSR2_API::OnDestroy()
 {
     UpscaleContext::OnDestroy();
+}
+
+static void onFSR2Msg(FfxFsr2MsgType type, const wchar_t* message)
+{
+    if (type == FFX_FSR2_MESSAGE_TYPE_ERROR)
+    {
+        OutputDebugStringW(L"FSR2_API_DEBUG_ERROR: ");
+    } else if (type == FFX_FSR2_MESSAGE_TYPE_WARNING)
+    {
+        OutputDebugStringW(L"FSR2_API_DEBUG_WARNING: ");
+    }
+    OutputDebugStringW(message);
+    OutputDebugStringW(L"\n");
 }
 
 void UpscaleContext_FSR2_API::OnCreateWindowSizeDependentResources(
@@ -107,12 +120,17 @@ void UpscaleContext_FSR2_API::OnCreateWindowSizeDependentResources(
     initializationParameters.flags = FFX_FSR2_ENABLE_AUTO_EXPOSURE;
 
     if (m_bInvertedDepth) {
-        initializationParameters.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED;
+        initializationParameters.flags |= FFX_FSR2_ENABLE_DEPTH_INVERTED | FFX_FSR2_ENABLE_DEPTH_INFINITE;
     }
 
-    if (hdr) {
-        initializationParameters.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
+    if (m_enableDebugCheck)
+    {
+        initializationParameters.flags |= FFX_FSR2_ENABLE_DEBUG_CHECKING;
+        initializationParameters.fpMessage = &onFSR2Msg;
     }
+
+    // Input data is HDR
+    initializationParameters.flags |= FFX_FSR2_ENABLE_HIGH_DYNAMIC_RANGE;
 
 #if COMPILE_FROM_HLSL
     // Override the shader creation so we can compile from HLSL source.
@@ -144,6 +162,10 @@ void UpscaleContext_FSR2_API::OnDestroyWindowSizeDependentResources()
 
 void UpscaleContext_FSR2_API::BuildDevUI(UIState* pState)
 {
+    if (ImGui::Checkbox("Enable API Debug Checking", &m_enableDebugCheck))
+    {
+        ReloadPipelines();
+    }
 }
 
 void UpscaleContext_FSR2_API::ReloadPipelines()
@@ -177,6 +199,15 @@ void UpscaleContext_FSR2_API::GenerateReactiveMask(ID3D12GraphicsCommandList* pC
 
 void UpscaleContext_FSR2_API::Draw(ID3D12GraphicsCommandList* pCommandList, const FfxUpscaleSetup& cameraSetup, UIState* pState)
 {
+    float farPlane = pState->camera.GetFarPlane();
+    float nearPlane = pState->camera.GetNearPlane();
+
+    if (m_bInvertedDepth)
+    {
+        // Cauldron1.0 can have planes inverted. Adjust before providing to FSR2.
+        std::swap(farPlane, nearPlane);
+    }
+
     FfxFsr2DispatchDescription dispatchParameters = {};
     dispatchParameters.commandList = ffxGetCommandListDX12(pCommandList);
     dispatchParameters.color = ffxGetResourceDX12(&context, cameraSetup.unresolvedColorResource, L"FSR2_InputColor");
@@ -215,8 +246,8 @@ void UpscaleContext_FSR2_API::Draw(ID3D12GraphicsCommandList* pCommandList, cons
     dispatchParameters.preExposure = 1.0f;
     dispatchParameters.renderSize.width = pState->renderWidth;
     dispatchParameters.renderSize.height = pState->renderHeight;
-    dispatchParameters.cameraFar = pState->camera.GetFarPlane();
-    dispatchParameters.cameraNear = pState->camera.GetNearPlane();
+    dispatchParameters.cameraFar = farPlane;
+    dispatchParameters.cameraNear = nearPlane;
     dispatchParameters.cameraFovAngleVertical = pState->camera.GetFovV();
     pState->bReset = false;
 

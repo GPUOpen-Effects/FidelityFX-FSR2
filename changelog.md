@@ -1,3 +1,18 @@
+2023-02-16 | FidelityFX Super Resolution 2.2
+-------
+- Introduction of API debug checker.
+- Changes to improve "High Velocity Ghosting" situations.
+- Changes to Luminance computation with pre-exposure application.
+- Small motion vectors ignored in previous depth estimation.
+- Changes to depth logic to improve disocclusion detection and avoid self-disocclusions.
+- Dilated reactive mask logic updated to use temporal motion vector divergence to kill locks.
+- New lock luminance resource.
+- Accumulation overhauled to use temporal reactivity.
+- Changed how intermediate signals are stored and tonemapped.
+- Luminance instability logic improved.
+- Tonemapping no longer applied during RCAS to retain more dynamic range.
+- Fixes for multiple user reported issues on GitHub and elsewhere. Thank you for your feedback!
+
 2022-10-10 | FidelityFX Super Resolution 2.1.2
 -------
 - Fix resource precision issue.

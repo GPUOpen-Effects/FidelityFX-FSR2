@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,19 +19,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// FSR2 pass 6
-// SRV  4 : m_Exposure                          : r_exposure
-// SRV 19 : FSR2_InternalUpscaled1              : r_rcas_input
-// UAV 18 : DisplayOutput                       : rw_upscaled_output
-// CB   0 : cbFSR2
-// CB   1 : cbRCAS
-
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_samplerless_texture_functions : require
+// Needed for rw_upscaled_output declaration
+#extension GL_EXT_shader_image_load_formatted : require
 
-#define FSR2_BIND_SRV_EXPOSURE              0
+#define FSR2_BIND_SRV_INPUT_EXPOSURE        0
 #define FSR2_BIND_SRV_RCAS_INPUT            1
 #define FSR2_BIND_UAV_UPSCALED_OUTPUT       2
 #define FSR2_BIND_CB_FSR2                   3
@@ -58,17 +53,10 @@
     }
 #endif
 
-#if FFX_HALF
-vec4 LoadRCAS_Input(FfxInt16x2 iPxPos)
-{
-    return texelFetch(r_rcas_input, iPxPos, 0);
-}
-#else
 vec4 LoadRCAS_Input(FfxInt32x2 iPxPos)
 {
     return texelFetch(r_rcas_input, iPxPos, 0);
 }
-#endif
 
 #include "ffx_fsr2_rcas.h"
 

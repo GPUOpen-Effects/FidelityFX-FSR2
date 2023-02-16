@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,14 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// FSR2 pass 6
-// SRV  4 : m_Exposure                          : r_exposure
-// SRV 19 : FSR2_InternalUpscaled1              : r_rcas_input
-// UAV 18 : DisplayOutput                       : rw_upscaled_output
-// CB   0 : cbFSR2
-// CB   1 : cbRCAS
-
-#define FSR2_BIND_SRV_EXPOSURE              0
+#define FSR2_BIND_SRV_INPUT_EXPOSURE        0
 #define FSR2_BIND_SRV_RCAS_INPUT            1
 #define FSR2_BIND_UAV_UPSCALED_OUTPUT       0
 #define FSR2_BIND_CB_FSR2                   0
@@ -53,17 +46,11 @@
     }
 #endif
 
-#if FFX_HALF
-float4 LoadRCAS_Input(FfxInt16x2 iPxPos)
-{
-    return r_rcas_input[iPxPos];
-}
-#else
+
 float4 LoadRCAS_Input(FfxInt32x2 iPxPos)
 {
     return r_rcas_input[iPxPos];
 }
-#endif
 
 #include "ffx_fsr2_rcas.h"
 

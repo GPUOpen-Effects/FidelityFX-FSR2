@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,16 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// FSR2 pass 4
-// SRV  5 : m_UpscaleReactive                   : r_reactive_mask
-// SRV 11 : FSR2_LockStatus2                    : r_lock_status
-// SRV 13 : FSR2_PreparedInputColor             : r_prepared_input_color
-// UAV 11 : FSR2_LockStatus1                    : rw_lock_status
-// CB   0 : cbFSR2
-
-#define FSR2_BIND_SRV_LOCK_STATUS                           1
-#define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  2
-#define FSR2_BIND_UAV_LOCK_STATUS                           0
+#define FSR2_BIND_SRV_LOCK_INPUT_LUMA                       0
+#define FSR2_BIND_UAV_NEW_LOCKS                             0
+#define FSR2_BIND_UAV_RECONSTRUCTED_PREV_NEAREST_DEPTH      1
 #define FSR2_BIND_CB_FSR2                                   0
 
 #include "ffx_fsr2_callbacks_hlsl.h"

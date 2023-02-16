@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -829,6 +829,79 @@ FfxFloat32x4 ffxMed3(FfxFloat32x4 x, FfxFloat32x4 y, FfxFloat32x4 z)
     return max(min(x, y), min(max(x, y), z));
 }
 
+/// Compute the median of three values.
+///
+/// NOTE: This function should compile down to a single <c><i>V_MED3_I32</i></c> operation on
+/// GCN/RDNA hardware.
+///
+/// @param [in] x               The first value to include in the median calculation.
+/// @param [in] y               The second value to include in the median calcuation.
+/// @param [in] z               The third value to include in the median calcuation.
+///
+/// @returns
+/// The median value of <c><i>x</i></c>, <c><i>y</i></c>, and <c><i>z</i></c>.
+///
+/// @ingroup GLSL
+FfxInt32 ffxMed3(FfxInt32 x, FfxInt32 y, FfxInt32 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+
+/// Compute the median of three values.
+///
+/// NOTE: This function should compile down to a single <c><i>V_MED3_I32</i></c> operation on
+/// GCN/RDNA hardware.
+///
+/// @param [in] x               The first value to include in the median calculation.
+/// @param [in] y               The second value to include in the median calcuation.
+/// @param [in] z               The third value to include in the median calcuation.
+///
+/// @returns
+/// The median value of <c><i>x</i></c>, <c><i>y</i></c>, and <c><i>z</i></c>.
+///
+/// @ingroup GLSL
+FfxInt32x2 ffxMed3(FfxInt32x2 x, FfxInt32x2 y, FfxInt32x2 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+
+/// Compute the median of three values.
+///
+/// NOTE: This function should compile down to a single <c><i>V_MED3_I32</i></c> operation on
+/// GCN/RDNA hardware.
+///
+/// @param [in] x               The first value to include in the median calculation.
+/// @param [in] y               The second value to include in the median calcuation.
+/// @param [in] z               The third value to include in the median calcuation.
+///
+/// @returns
+/// The median value of <c><i>x</i></c>, <c><i>y</i></c>, and <c><i>z</i></c>.
+///
+/// @ingroup GLSL
+FfxInt32x3 ffxMed3(FfxInt32x3 x, FfxInt32x3 y, FfxInt32x3 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+
+/// Compute the median of three values.
+///
+/// NOTE: This function should compile down to a single <c><i>V_MED3_I32</i></c> operation on
+/// GCN/RDNA hardware.
+///
+/// @param [in] x               The first value to include in the median calculation.
+/// @param [in] y               The second value to include in the median calcuation.
+/// @param [in] z               The third value to include in the median calcuation.
+///
+/// @returns
+/// The median value of <c><i>x</i></c>, <c><i>y</i></c>, and <c><i>z</i></c>.
+///
+/// @ingroup GLSL
+FfxInt32x4 ffxMed3(FfxInt32x4 x, FfxInt32x4 y, FfxInt32x4 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+
+
 /// Compute the minimum of three values.
 ///
 /// NOTE: This function should compile down to a single <c><i>V_MIN3_F32</i></c> operation on
@@ -1398,6 +1471,40 @@ FfxFloat16x4 ffxLerp(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16 a)
 FfxFloat16x4 ffxLerp(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16x4 a)
 {
     return mix(x, y, a);
+}
+//------------------------------------------------------------------------------------------------------------------------------
+// No packed version of ffxMid3.
+FfxFloat16 ffxMed3Half(FfxFloat16 x, FfxFloat16 y, FfxFloat16 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxFloat16x2 ffxMed3Half(FfxFloat16x2 x, FfxFloat16x2 y, FfxFloat16x2 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxFloat16x3 ffxMed3Half(FfxFloat16x3 x, FfxFloat16x3 y, FfxFloat16x3 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxFloat16x4 ffxMed3Half(FfxFloat16x4 x, FfxFloat16x4 y, FfxFloat16x4 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxInt16 ffxMed3Half(FfxInt16 x, FfxInt16 y, FfxInt16 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxInt16x2 ffxMed3Half(FfxInt16x2 x, FfxInt16x2 y, FfxInt16x2 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxInt16x3 ffxMed3Half(FfxInt16x3 x, FfxInt16x3 y, FfxInt16x3 z)
+{
+    return max(min(x, y), min(max(x, y), z));
+}
+FfxInt16x4 ffxMed3Half(FfxInt16x4 x, FfxInt16x4 y, FfxInt16x4 z)
+{
+    return max(min(x, y), min(max(x, y), z));
 }
 //------------------------------------------------------------------------------------------------------------------------------
 // No packed version of ffxMax3.

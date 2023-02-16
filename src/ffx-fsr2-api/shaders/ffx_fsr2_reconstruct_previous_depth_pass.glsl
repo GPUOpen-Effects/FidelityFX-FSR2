@@ -1,6 +1,6 @@
 // This file is part of the FidelityFX SDK.
 //
-// Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+// Copyright (c) 2022-2023 Advanced Micro Devices, Inc. All rights reserved.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -19,29 +19,26 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// FSR2 pass 2
-// SRV  2 : m_MotionVector                      : r_motion_vectors
-// SRV  3 : m_depthbuffer                       : r_depth
-// UAV  7 : FSR2_ReconstructedPrevNearestDepth  : rw_reconstructed_previous_nearest_depth
-// UAV  8 : FSR2_DilatedVelocity                : rw_dilated_motion_vectors
-// UAV  9 : FSR2_DilatedDepth                   : rw_dilatedDepth
-// CB   0 : cbFSR2
-
 #version 450
 
 #extension GL_GOOGLE_include_directive : require
 #extension GL_EXT_samplerless_texture_functions : require
 
-#define FSR2_BIND_SRV_MOTION_VECTORS                        0
-#define FSR2_BIND_SRV_DEPTH                                 1
-#define FSR2_BIND_SRV_REACTIVE_MASK                         2
-#define FSR2_BIND_SRV_TRANSPARENCY_AND_COMPOSITION_MASK     3
-#define FSR2_BIND_SRV_PREPARED_INPUT_COLOR                  4
+#define FSR2_BIND_SRV_INPUT_MOTION_VECTORS                  0
+#define FSR2_BIND_SRV_INPUT_DEPTH                           1
+#define FSR2_BIND_SRV_INPUT_COLOR                           2
+#define FSR2_BIND_SRV_INPUT_EXPOSURE                        3
+#define FSR2_BIND_SRV_LUMA_HISTORY                          4
+
 #define FSR2_BIND_UAV_RECONSTRUCTED_PREV_NEAREST_DEPTH      5
 #define FSR2_BIND_UAV_DILATED_MOTION_VECTORS                6
 #define FSR2_BIND_UAV_DILATED_DEPTH                         7
-#define FSR2_BIND_UAV_DILATED_REACTIVE_MASKS                8
-#define FSR2_BIND_CB_FSR2                                   9
+#define FSR2_BIND_UAV_PREPARED_INPUT_COLOR                  8
+#define FSR2_BIND_UAV_LUMA_HISTORY                          9
+#define FSR2_BIND_UAV_LUMA_INSTABILITY                      10
+#define FSR2_BIND_UAV_LOCK_INPUT_LUMA                       11
+
+#define FSR2_BIND_CB_FSR2                                   12
 
 #include "ffx_fsr2_callbacks_glsl.h"
 #include "ffx_fsr2_common.h"

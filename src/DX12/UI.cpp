@@ -230,6 +230,12 @@ void FSR2Sample::BuildUI()
                 ImGui::Combo("Reactive Mask mode", (int*)(&m_UIState.nReactiveMaskMode), reactiveOptions, _countof(reactiveOptions));
 
                 ImGui::Checkbox("Use Transparency and Composition Mask", &m_UIState.bCompositionMask);
+
+                if (m_pRenderer &&
+                    ImGui::CollapsingHeader("Dev Options", ImGuiTreeNodeFlags_DefaultOpen))
+                {
+                    m_pRenderer->BuildDevUI(&m_UIState);
+                }
             }
             else if (m_UIState.m_nUpscaleType <= UPSCALE_TYPE_FSR_1_0)
             {
