@@ -1,6 +1,6 @@
 # FidelityFX Super Resolution 2.2 (FSR 2.2)
 
-Copyright (c) 2022 Advanced Micro Devices, Inc. All rights reserved.
+Copyright (c) 2023 Advanced Micro Devices, Inc. All rights reserved.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,7 @@ You can find the binaries for FidelityFX FSR in the release section on GitHub.
     - [Mipmap biasing](#mipmap-biasing)
     - [Frame Time Delta Input](#frame-time-delta-input)
     - [HDR support](#hdr-support)
-    - [Falling back to 32bit floating point](#falling-back-to-32bit-floating-point)
+    - [Falling back to 32-bit floating point](#falling-back-to-32-bit-floating-point)
     - [64-wide wavefronts](#64-wide-wavefronts)
     - [API Debug Checker](#debug-checker)
 - [The technique](#the-technique)
