@@ -1,3 +1,8 @@
+2023-02-23 | FidelityFX Super Resolution 2.2a
+-------
+- Minor updates to the documentation
+- Removal of a handful of files from the prior release that are no longer part of FSR 2.2.
+
 2023-02-16 | FidelityFX Super Resolution 2.2
 -------
 - Introduction of API debug checker.
