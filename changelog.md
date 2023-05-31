@@ -1,9 +1,16 @@
-2023-02-23 | FidelityFX Super Resolution 2.2a
+2023-05-12 | FidelityFX Super Resolution 2.2.1
+-------
+- Fixed comments in API header for incorrect cameraFar use.
+- Fixed DRS issue where resource was not correctly cleared on first use.
+- Fixed issue where luma instability logic could introduce output artefacts with strobing lights.
+- Fixed incorrect luma resource size.
+
+2023-02-23 | FidelityFX Super Resolution 2.2.0a
 -------
 - Minor updates to the documentation
 - Removal of a handful of files from the prior release that are no longer part of FSR 2.2.
 
-2023-02-16 | FidelityFX Super Resolution 2.2
+2023-02-16 | FidelityFX Super Resolution 2.2.0
 -------
 - Introduction of API debug checker.
 - Changes to improve "High Velocity Ghosting" situations.

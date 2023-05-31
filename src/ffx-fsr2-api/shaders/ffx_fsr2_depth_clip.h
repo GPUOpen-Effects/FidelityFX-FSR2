@@ -216,7 +216,7 @@ FfxFloat32x3 ComputePreparedInputColor(FfxInt32x2 iPxLrPos)
     return fPreparedYCoCg;
 }
 
-float EvaluateSurface(FfxInt32x2 iPxPos, FfxFloat32x2 fMotionVector)
+FfxFloat32 EvaluateSurface(FfxInt32x2 iPxPos, FfxFloat32x2 fMotionVector)
 {
     FfxFloat32 d0 = GetViewSpaceDepth(LoadReconstructedPrevDepth(iPxPos + FfxInt32x2(0, -1)));
     FfxFloat32 d1 = GetViewSpaceDepth(LoadReconstructedPrevDepth(iPxPos + FfxInt32x2(0, 0)));
@@ -224,6 +224,7 @@ float EvaluateSurface(FfxInt32x2 iPxPos, FfxFloat32x2 fMotionVector)
 
     return 1.0f - FfxFloat32(((d0 - d1) > (d1 * 0.01f)) && ((d1 - d2) > (d2 * 0.01f)));
 }
+
 void DepthClip(FfxInt32x2 iPxPos)
 {
     FfxFloat32x2 fDepthUv = (iPxPos + 0.5f) / RenderSize();
