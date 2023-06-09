@@ -797,6 +797,10 @@ To build the FSR2 sample, please follow the following instructions:
 
 3) Open the solutions in the DX12 or Vulkan directory (depending on your preference), compile and run.
 
+4) There is an off-screen version which currently runs on Vulkan,to use this,you need to provide:
+- Color textures (RGBA)
+- Motion vectors and depth textures(RG for motion vectors and B for depth,and please remain the A channel)
+
 # Limitations
 
 FSR2 requires a GPU with typed UAV load and R16G16B16A16_UNORM support.

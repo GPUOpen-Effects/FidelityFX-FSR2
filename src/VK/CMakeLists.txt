@@ -49,6 +49,11 @@ set(sources
     AnimatedTexture.h
     dpiawarescaling.manifest)
 
+set(sources_offscreen
+    ./offscreen/main.cpp
+    ./offscreen/helper.hpp
+    ./offscreen/Vulkan_FSR2.hpp)
+
 set(fsr1_shaders_src
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_core.h
     ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api/shaders/ffx_common_types.h
@@ -124,6 +129,7 @@ set(sample_shaders_src
 set(APP_ICON_GPUOPEN "${CMAKE_CURRENT_SOURCE_DIR}/../common/GpuOpenIcon.rc")
 
 source_group("sources" FILES ${sources})
+source_group("sources_offscreen" FILES ${sources_offscreen})
 source_group("spatial_shaders" FILES ${fsr1_shaders_src})
 source_group("fsr2_shaders" FILES ${fsr2_shaders_src})
 source_group("particle_shaders" FILES ${particle_shaders_src})
@@ -146,4 +152,13 @@ target_link_directories(FSR2_Sample_VK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../
 add_dependencies(FSR2_Sample_VK copied_vk_shaders_fsr2_src)
 
 set_target_properties(FSR2_Sample_VK PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_HOME_DIRECTORY}/bin" DEBUG_POSTFIX "d")
+
+add_executable(FSR2_OffScreen_VK ${sources_offscreen} ${fsr2_src} ${fsr1_shaders_src} ${fsr2_shaders_src} ${particle_shaders_src} ${spd_shaders_src} ${common} ${APP_ICON_GPUOPEN})
+target_compile_definitions(FSR2_OffScreen_VK PRIVATE $<$<CONFIG:RelWithDebInfo>:FSR2_DEBUG_SHADERS=1>)
+target_link_libraries(FSR2_OffScreen_VK LINK_PUBLIC Cauldron_VK Vulkan::Vulkan ffx_fsr2_api_x64 ffx_fsr2_api_vk_x64) # ffx_fsr2_api_x64
+target_include_directories(FSR2_OffScreen_VK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/offscreen/include ${CMAKE_CURRENT_SOURCE_DIR}/../ffx-fsr2-api ${CMAKE_CURRENT_SOURCE_DIR}/../../libs)
+target_link_directories(FSR2_OffScreen_VK PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../libs)
+
+set_target_properties(FSR2_OffScreen_VK PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_HOME_DIRECTORY}/bin" DEBUG_POSTFIX "d")
+
 set_source_files_properties(${Shaders_src} PROPERTIES VS_TOOL_OVERRIDE "Text")
