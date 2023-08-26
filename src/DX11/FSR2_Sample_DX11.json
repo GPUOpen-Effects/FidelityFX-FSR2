@@ -1,0 +1,11 @@
+{
+    "globals": {
+        "width": 1920,
+        "height": 1080,
+        "fullscreen": false,
+        "upscaling_type": 2,
+        "scale_mode": 3,
+        "rotate_camera": true,
+        "rotate_speed": 0.25
+    }
+}

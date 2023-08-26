@@ -1,0 +1,30 @@
+# This is a windows-only project. Force CRLF.
+* text eol=crlf
+
+# Explicit settings for specific file types.
+*.h         eol=crlf
+*.hpp       eol=crlf
+*.inc       eol=crlf
+*.cpp       eol=crlf
+*.inl       eol=crlf
+*.hlsl      eol=crlf
+*.vcxproj   eol=crlf
+*.filters   eol=crlf
+*.props     eol=crlf
+*.sln       eol=crlf
+*.bat       eol=crlf
+*.txt       eol=crlf
+*.lua       eol=crlf
+*.md        eol=crlf
+*.pdf       binary
+*.ppsx      binary
+*.ico       binary
+*.png       binary
+*.dds       binary
+*.dll       binary
+*.exe       binary
+
+# Ensure precompiled shader files are detected as C++.
+# Otherwise, if there are a lot of them, the repo can 
+# get incorrectly marked as Assembly.
+src/Shaders/inc/*.inc linguist-language=C++

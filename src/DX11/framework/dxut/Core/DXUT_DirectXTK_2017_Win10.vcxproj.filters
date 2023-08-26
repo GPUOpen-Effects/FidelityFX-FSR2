@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns:atg="http://atg.xbox.com" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<ItemGroup>
+<Filter Include="Resource Files">
+<UniqueIdentifier>{8e114980-c1a3-4ada-ad7c-83caadf5daeb}</UniqueIdentifier>
+<Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+</Filter>
+</ItemGroup>
+<ItemGroup />
+<ItemGroup>
+      <ClCompile Include="DXUT.cpp" />
+      <CLInclude Include="DXUT.h" />
+      <ClCompile Include="DXUTDevice11.cpp" />
+      <CLInclude Include="DXUTDevice11.h" />
+      <ClCompile Include="DXUTmisc.cpp" />
+      <CLInclude Include="DXUTmisc.h" />
+      <CLInclude Include="DXErr.h" />
+      <ClCompile Include="DXErr.cpp" />
+  </ItemGroup>
+<ItemGroup></ItemGroup>
+<ItemGroup></ItemGroup>
+<ItemGroup></ItemGroup>
+</Project>
