@@ -22,6 +22,7 @@
 cmake_minimum_required(VERSION 3.15)
 set(CMAKE_DEBUG_POSTFIX d)
 
+option (FFX_FSR2_API_DX11 "Build FSR 2.0 DX11 backend" ON)
 option (FFX_FSR2_API_DX12 "Build FSR 2.0 DX12 backend" ON)
 option (FFX_FSR2_API_VK "Build FSR 2.0 Vulkan backend" ON)
 
@@ -97,6 +98,10 @@ else()
 endif()
 
 # graphics api backends
+if(FFX_FSR2_API_DX11)
+    message("Will build FSR2 library: DX11 backend")
+    add_subdirectory(dx11)
+endif()
 if(FFX_FSR2_API_DX12)
     message("Will build FSR2 library: DX12 backend")
     add_subdirectory(dx12)

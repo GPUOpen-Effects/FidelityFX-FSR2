@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns:atg="http://atg.xbox.com" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<ItemGroup>
+<Filter Include="Resource Files">
+<UniqueIdentifier>{8e114980-c1a3-4ada-ad7c-83caadf5daeb}</UniqueIdentifier>
+<Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe</Extensions>
+</Filter>
+</ItemGroup>
+<ItemGroup />
+<ItemGroup>
+      <ClCompile Include="DXUTcamera.cpp" />
+      <CLInclude Include="DXUTcamera.h" />
+      <ClCompile Include="DXUTgui.cpp" />
+      <CLInclude Include="DXUTgui.h" />
+      <ClCompile Include="DXUTguiIME.cpp" />
+      <CLInclude Include="DXUTguiIME.h" />
+      <CLInclude Include="DXUTlockfreepipe.h" />
+      <ClCompile Include="DXUTres.cpp" />
+      <CLInclude Include="DXUTres.h" />
+      <ClCompile Include="DXUTsettingsdlg.cpp" />
+      <CLInclude Include="DXUTsettingsdlg.h" />
+      <ClCompile Include="ImeUi.cpp" />
+      <CLInclude Include="ImeUi.h" />
+      <ClCompile Include="SDKmisc.cpp" />
+      <CLInclude Include="SDKmisc.h" />
+  </ItemGroup>
+<ItemGroup></ItemGroup>
+<ItemGroup></ItemGroup>
+<ItemGroup></ItemGroup>
+</Project>

@@ -21,6 +21,7 @@
 
 cmake_minimum_required(VERSION 3.12.1)
 
+option (GFX_API_DX11 "Build with DX11" ON)
 option (GFX_API_DX12 "Build with DX12" ON)
 option (GFX_API_VK "Build with Vulkan" ON)
 
@@ -30,6 +31,8 @@ else()
     project (FSR2_Sample_${GFX_API})
 
     set_property(DIRECTORY ${CMAKE_PROJECT_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
+
+    set(GFX_API_DX11 OFF)
 
     if(GFX_API STREQUAL DX12)
         set(GFX_API_DX12 ON)
@@ -73,6 +76,7 @@ add_compile_options(/MP)
 add_compile_definitions($<$<CONFIG:RelWithDebInfo>:USE_PIX>)
 
 # override build options in ffx-fsr2-api cmake
+option (FFX_FSR2_API_DX11 "Build FSR 2.0 DX11 backend" ${GFX_API_DX11})
 option (FFX_FSR2_API_DX12 "Build FSR 2.0 DX12 backend" ${GFX_API_DX12})
 option (FFX_FSR2_API_VK "Build FSR 2.0 Vulkan backend" ${GFX_API_VK})
 
@@ -87,5 +91,8 @@ if(GFX_API_VK)
 endif()
 if(GFX_API_DX12)
     add_subdirectory(src/DX12)
+endif()
+if(GFX_API_DX11)
+    add_subdirectory(src/DX11)
 endif()
 
