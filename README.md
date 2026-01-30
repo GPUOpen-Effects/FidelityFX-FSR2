@@ -1,4 +1,4 @@
-# FidelityFX Super Resolution 2.2 (FSR 2.2)
+# FidelityFX Super Resolution 2.2 (FSR 2.2.1)
 
 Copyright (c) 2023 Advanced Micro Devices, Inc. All rights reserved.
 
@@ -805,6 +805,7 @@ FSR2 requires a GPU with typed UAV load and R16G16B16A16_UNORM support.
 
 | Version        | Date              |
 | ---------------|-------------------|
+| **2.2.1**      | 2023-05-12        |
 | **2.2.0**      | 2023-02-16        |
 | **2.1.2**      | 2022-10-19        |
 | **2.1.1**      | 2022-09-15        |

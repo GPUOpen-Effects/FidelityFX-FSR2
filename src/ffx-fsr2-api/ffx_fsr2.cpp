@@ -524,7 +524,7 @@ static FfxErrorCode fsr2Create(FfxFsr2Context_Private* context, const FfxFsr2Con
             FFX_SURFACE_FORMAT_R16G16_FLOAT, contextDescription->displaySize.width, contextDescription->displaySize.height, 1, FFX_RESOURCE_FLAGS_NONE },
 
         {   FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_INPUT_LUMA, L"FSR2_LockInputLuma", (FfxResourceUsage)(FFX_RESOURCE_USAGE_UAV),
-            FFX_SURFACE_FORMAT_R16_FLOAT, contextDescription->displaySize.width, contextDescription->displaySize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },
+            FFX_SURFACE_FORMAT_R16_FLOAT, contextDescription->maxRenderSize.width, contextDescription->maxRenderSize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },
 
         {   FFX_FSR2_RESOURCE_IDENTIFIER_NEW_LOCKS, L"FSR2_NewLocks", (FfxResourceUsage)(FFX_RESOURCE_USAGE_UAV),
             FFX_SURFACE_FORMAT_R8_UNORM, contextDescription->displaySize.width, contextDescription->displaySize.height, 1, FFX_RESOURCE_FLAGS_ALIASABLE },
@@ -795,6 +795,8 @@ static FfxErrorCode fsr2Dispatch(FfxFsr2Context_Private* context, const FfxFsr2D
         clearJob.clearJobDescriptor.target = context->srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS_1];
         context->contextDescription.callbacks.fpScheduleGpuJob(&context->contextDescription.callbacks, &clearJob);
         clearJob.clearJobDescriptor.target = context->srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_LOCK_STATUS_2];
+        context->contextDescription.callbacks.fpScheduleGpuJob(&context->contextDescription.callbacks, &clearJob);
+        clearJob.clearJobDescriptor.target = context->srvResources[FFX_FSR2_RESOURCE_IDENTIFIER_PREPARED_INPUT_COLOR];
         context->contextDescription.callbacks.fpScheduleGpuJob(&context->contextDescription.callbacks, &clearJob);
     }
 

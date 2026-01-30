@@ -135,6 +135,7 @@ FfxFloat32x3 ComputeBaseAccumulationWeight(const AccumulationPassCommonParams pa
 
 FfxFloat32 ComputeLumaInstabilityFactor(const AccumulationPassCommonParams params, RectificationBox clippingBox, FfxFloat32 fThisFrameReactiveFactor, FfxFloat32 fLuminanceDiff)
 {
+    const FfxFloat32 fUnormThreshold = 1.0f / 255.0f;
     const FfxInt32 N_MINUS_1 = 0;
     const FfxInt32 N_MINUS_2 = 1;
     const FfxInt32 N_MINUS_3 = 2;
@@ -156,7 +157,8 @@ FfxFloat32 ComputeLumaInstabilityFactor(const AccumulationPassCommonParams param
 
     FfxFloat32 fMin = abs(fDiffs0);
 
-    if (fMin >= (1.0f / 255.0f)) {
+    if (fMin >= fUnormThreshold)
+    {
         for (int i = N_MINUS_2; i <= N_MINUS_4; i++) {
             FfxFloat32 fDiffs1 = (fCurrentFrameLuma - fCurrentFrameLumaHistory[i]);
 
@@ -168,10 +170,13 @@ FfxFloat32 ComputeLumaInstabilityFactor(const AccumulationPassCommonParams param
             }
         }
 
-        fLumaInstability = FfxFloat32(fMin != abs(fDiffs0));
+        const FfxFloat32 fBoxSize = clippingBox.boxVec.x;
+        const FfxFloat32 fBoxSizeFactor = ffxPow(ffxSaturate(fBoxSize / 0.1f), 6.0f);
 
-        fLumaInstability *= 1.0f - ffxMax(params.fAccumulationMask, ffxPow(fThisFrameReactiveFactor, 1.0f / 3.0f));
-        fLumaInstability *= ffxLerp(1.0f, 0.0f, ffxSaturate(params.fHrVelocity / 20.0f));
+        fLumaInstability = FfxFloat32(fMin != abs(fDiffs0)) * fBoxSizeFactor;
+        fLumaInstability = FfxFloat32(fLumaInstability > fUnormThreshold);
+
+        fLumaInstability *= 1.0f - ffxMax(params.fAccumulationMask, ffxPow(fThisFrameReactiveFactor, 1.0f / 6.0f));
     }
 
     //shift history
